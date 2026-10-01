@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("SkillShelf Backend is running!");
+  res.send("Maxma Backend is running!");
 });
 
 export default app;
