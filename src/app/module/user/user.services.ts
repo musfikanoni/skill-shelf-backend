@@ -7,13 +7,13 @@ import { User } from "./user.model";
 import { userSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
 import bcryptjs from 'bcryptjs';
-// import { Subscription } from "../subscription/subscription.model";
-// import { Payment } from "../payment/payment.model";
-// import { Bundle } from "../bundle/bundle.model";
-// import { getFilesByTier } from "../../utils/getFileByTier";
-// import { Product } from "../product/product.model";
-// import { Course } from "../courses/courses.model";
-// import { IPlan } from "../plan/plan.interface";
+import { Subscription } from "../subscription/subscription.model";
+import { Payment } from "../payment/payment.model";
+import { Bundle } from "../bundle/bundle.model";
+import { getFilesByTier } from "../../utils/getFileByTier";
+import { Product } from "../product/product.model";
+import { Course } from "../courses/courses.model";
+import { IPlan } from "../plan/plan.interface";
 import { nanoid } from "nanoid";
 import { QueryBuilder } from "../../utils/QueryBuiler";
 import { generateOtp } from "../otp/otp.service";
@@ -111,22 +111,22 @@ const getMe = async (userId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, "User not found");
   }
 
-    // =========================
+  // =========================
   // 🔥 GET ACTIVE SUBSCRIPTION
   // ========================= /n
-//   const subscription = await Subscription.findOne({
-//     user: userId,
-//   }).sort({ createdAt: -1 }); 
+  const subscription = await Subscription.findOne({
+    user: userId,
+  }).sort({ createdAt: -1 }); 
 
-//   const response = {
-//     ...user.toObject(),
+  const response = {
+    ...user.toObject(),
 
-//     currentPeriodEnd: subscription?.currentPeriodEnd || null,
-//   };
+    currentPeriodEnd: subscription?.currentPeriodEnd || null,
+  };
 
-//   return {
-//     data: response,
-//   };
+  return {
+    data: response,
+  };
 };
 
 
@@ -325,120 +325,120 @@ export const getMyLibrary = async (userId: string) => {
 
   // =========================
   // 1️⃣ SUBSCRIPTION
-  // =========================/n
-//   const subscription = await Subscription.findOne({
-//     user: userId,
-//     status: "ACTIVE",
-//   }).populate<{ plan: IPlan }>("plan");
+  // =========================
+  const subscription = await Subscription.findOne({
+    user: userId,
+    status: "ACTIVE",
+  }).populate<{ plan: IPlan }>("plan");
 
-//   const planAccess = subscription?.plan?.access;
+  const planAccess = subscription?.plan?.access;
 
   // =========================
   // 2️⃣ PURCHASED DATA
   // =========================
-//   const payments = await Payment.find({
-//     user: userId,
-//     status: "PAID",
-//   });
+  const payments = await Payment.find({
+    user: userId,
+    status: "PAID",
+  });
 
-//   const productPurchases = payments.filter(
-//     (p) => p.itemType === "PRODUCT"
-//   );
+  const productPurchases = payments.filter(
+    (p) => p.itemType === "PRODUCT"
+  );
 
-//   const coursePurchases = payments.filter(
-//     (p) => p.itemType === "COURSE"
-//   );
+  const coursePurchases = payments.filter(
+    (p) => p.itemType === "COURSE"
+  );
 
-//   const bundlePurchases = payments.filter(
-//     (p) => p.itemType === "BUNDLE"
-//   );
+  const bundlePurchases = payments.filter(
+    (p) => p.itemType === "BUNDLE"
+  );
 
   // =========================
   // 3️⃣ PRODUCTS (merge subscription + purchase)
   // =========================
-//   const purchasedProductIds = productPurchases.map((p) =>
-//     p.itemId.toString()
-//   );
+  const purchasedProductIds = productPurchases.map((p) =>
+    p.itemId.toString()
+  );
 
-//   const subscriptionProductIds =
-//     planAccess?.products?.map((p: any) => p.product.toString()) || [];
+  const subscriptionProductIds =
+    planAccess?.products?.map((p: any) => p.product.toString()) || [];
 
-//   const allProductIds = [
-//     ...new Set([...purchasedProductIds, ...subscriptionProductIds]),
-//   ];
+  const allProductIds = [
+    ...new Set([...purchasedProductIds, ...subscriptionProductIds]),
+  ];
 
-//   const products = await Product.find({
-//     _id: { $in: allProductIds },
-//   }).populate("category");
+  const products = await Product.find({
+    _id: { $in: allProductIds },
+  }).populate("category");
 
-//   const enrichedProducts = products.map((product) => {
+  const enrichedProducts = products.map((product) => {
 
-//     // check purchase
-//     const purchase = productPurchases.find(
-//       (p) => p.itemId.toString() === product._id.toString()
-//     );
+    // check purchase
+    const purchase = productPurchases.find(
+      (p) => p.itemId.toString() === product._id.toString()
+    );
 
-//     // check subscription access
-//     const subAccess = planAccess?.products?.find(
-//       (p: any) => p.product.toString() === product._id.toString()
-//     );
+    // check subscription access
+    const subAccess = planAccess?.products?.find(
+      (p: any) => p.product.toString() === product._id.toString()
+    );
 
-//     const tier =
-//       purchase?.planType || subAccess?.fileAccess || "basic";
+    const tier =
+      purchase?.planType || subAccess?.fileAccess || "basic";
 
-//     return {
-//       ...product.toObject(),
-//       files: getFilesByTier(product, tier),
-//       isPurchased: true,
-//       accessType: purchase ? "PURCHASE" : "SUBSCRIPTION",
-//       tier,
-//     };
-//   });
+    return {
+      ...product.toObject(),
+      files: getFilesByTier(product, tier),
+      isPurchased: true,
+      accessType: purchase ? "PURCHASE" : "SUBSCRIPTION",
+      tier,
+    };
+  });
 
   // =========================
   // 4️⃣ COURSES
   // ========================= /n
-//   const purchasedCourseIds = coursePurchases.map((p) =>
-//     p.itemId.toString()
-//   );
+  const purchasedCourseIds = coursePurchases.map((p) =>
+    p.itemId.toString()
+  );
 
-//   const subscriptionCourseIds =
-//     planAccess?.courses || [];
+  const subscriptionCourseIds =
+    planAccess?.courses || [];
 
-//   const allCourseIds = [
-//     ...new Set([...purchasedCourseIds, ...subscriptionCourseIds]),
-//   ];
+  const allCourseIds = [
+    ...new Set([...purchasedCourseIds, ...subscriptionCourseIds]),
+  ];
 
-//   const courses = await Course.find({
-//     _id: { $in: allCourseIds },
-//   });
+  const courses = await Course.find({
+    _id: { $in: allCourseIds },
+  });
 
   // =========================
   // 5️⃣ BUNDLES
   // =========================
-//   const purchasedBundleIds = bundlePurchases.map((p) =>
-//     p.itemId.toString()
-//   );
+  const purchasedBundleIds = bundlePurchases.map((p) =>
+    p.itemId.toString()
+  );
 
-//   const subscriptionBundleIds =
-//     planAccess?.bundles || [];
+  const subscriptionBundleIds =
+    planAccess?.bundles || [];
 
-//   const allBundleIds = [
-//     ...new Set([...purchasedBundleIds, ...subscriptionBundleIds]),
-//   ];
+  const allBundleIds = [
+    ...new Set([...purchasedBundleIds, ...subscriptionBundleIds]),
+  ];
 
-//   const bundles = await Bundle.find({
-//     _id: { $in: allBundleIds },
-//   });
+  const bundles = await Bundle.find({
+    _id: { $in: allBundleIds },
+  });
 
   // =========================
   // FINAL RESPONSE
   // =========================
-//   return {
-//     products: enrichedProducts,
-//     courses,
-//     bundles,
-//   };
+  return {
+    products: enrichedProducts,
+    courses,
+    bundles,
+  };
 };
 
 export const UserServices = {
