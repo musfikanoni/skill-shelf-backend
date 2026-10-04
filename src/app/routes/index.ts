@@ -18,6 +18,7 @@ import { BundleRoutes } from "../module/bundle/bundle..routes"
 import { AffiliateRoutes } from "../module/affiliate/affiliate.routes"
 import { OrderRoutes } from "../module/order/order.routes"
 import { CourseRoutes } from "../module/courses/courses.routes"
+import { DashboardRoutes } from "../module/dashboard/dashboard.routes"
 
 export const router = Router()
 
@@ -90,10 +91,10 @@ const moduleRoutes = [
         path: "/bundle",
         route: BundleRoutes
     },
-    // {
-    //     path: "/dashboard",
-    //     route: DashboardRoutes
-    // },
+    {
+        path: "/dashboard",
+        route: DashboardRoutes
+    },
     {
         path: "/affiliate",
         route: AffiliateRoutes
