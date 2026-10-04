@@ -1,29 +1,106 @@
-
-
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
+import { catchAsync } from "../../utils/catchAsync";
 import { JwtPayload } from "jsonwebtoken";
-import { Payment } from "../modules/payment/payment.model";
-import AppError from "../../errorHelpers/AppError";
+import { sendResponse } from "../../utils/sendResponse";
+import { CourseService } from "./courses.services";
+import { getFileUrl } from "../../config/S3Client.config";
+import httpStatus from "http-status-codes";
 
-export const checkPlanAccess = (type: "PRODUCT" | "COURSE" | "BUNDLE") => {
-  return async (req:Request, res:Response, next:NextFunction) => {
-    const user = req.user as JwtPayload;
-    const userId = user.userId;
+const createCourse = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as JwtPayload;
 
-    const subscription = await Payment.findOne({ user: userId })
-      .populate("plan");
+  const files = req.files as Express.MulterS3.File[];
 
-    if (!subscription) {
-      throw new AppError(403, "No subscription found");
-    }
+  if (!files || files.length === 0) {
+    throw new Error("Thumbnail is required");
+  }
 
-    const plan: any = subscription.planType;
+  const thumbnailUrl = getFileUrl(files[0]);
 
-    const allowed =
-      plan?.access?.[type.toLowerCase() + "s"] || [];
-
-    req.allowedItems = allowed;
-
-    next();
+  const payload = {
+    ...req.body,
+    thumbnail: thumbnailUrl,
+    createdBy: user.userId,
   };
+
+  const result = await CourseService.createCourse(payload);
+console.log(result)
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: "Course created successfully",
+    data: result,
+  });
+});
+
+const getAllCourses = catchAsync(async (req: Request, res: Response) => {
+  const result = await CourseService.getAllCourses();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Courses retrieved successfully",
+    data: result,
+  });
+});
+
+const getSinglePublicCourse = catchAsync(async (req: Request, res: Response) => {
+  const result = await CourseService.getSinglePublicCourse(req.params.id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Course retrieved successfully",
+    data: result,
+  });
+});
+
+const getSingleCourse = catchAsync(async (req: Request, res: Response) => {
+  const result = await CourseService.getSingleCourse(req.params.id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Course retrieved successfully",
+    data: result,
+  });
+});
+
+const updateCourse = catchAsync(async (req: Request, res: Response) => {
+
+  const files = req.files as Express.MulterS3.File[];
+
+  if (files && files.length > 0) {
+    req.body.thumbnail = getFileUrl(files[0]);
+  }
+
+  const result = await CourseService.updateCourse(req.params.id, req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Course updated successfully",
+    data: result,
+  });
+});
+
+const deleteCourse = catchAsync(async (req: Request, res: Response) => {
+  const result = await CourseService.deleteCourse(req.params.id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Course deleted successfully",
+    data: result,
+  });
+});
+
+
+export const CourseController = {
+  createCourse,
+  getAllCourses,
+  getSingleCourse,
+  getSinglePublicCourse,
+  updateCourse,
+  deleteCourse,
 };

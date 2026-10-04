@@ -1,43 +1,37 @@
-import { Schema, model } from "mongoose";
-import { IOrder, OrderStatus, PlanType } from "./order.interface";
+import express from "express";
+import { OrderController } from "./order.controller";
+import { createOrderValidation } from "./order.validation";
+import { checkAuth } from "../../middlewares/checkAuth";
+import { Role } from "../user/user.interface";
+import { validateRequest } from "../../middlewares/validateRequest";
 
-const orderSchema = new Schema<IOrder>(
-    {
-        user: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        product: {
-            type: Schema.Types.ObjectId,
-            ref: "Product",
-            required: true,
-        },
+const router = express.Router();
 
-        stripeSessionId: { type: String },
-        stripePaymentIntentId: { type: String },
-        planType: {
-            type: String,
-            enum: Object.values(PlanType),
-            required: true,
-        },
-        couponCode: { type: String },
-        discountAmount: { type: Number, default: 0 },
-        finalAmount: { type: Number, required: true },
-        currency: { type: String, default: "usd" },
-
-        status: {
-            type: String,
-            enum: Object.values(OrderStatus),
-            default: OrderStatus.PENDING,
-        },
-        productQuantity: {
-            type: Number,
-            required: true,
-            min: 1
-        }
-    },
-    { timestamps: true }
+router.post(
+  "/checkout",
+  checkAuth(Role.USER), // protect route
+  validateRequest(createOrderValidation),
+  OrderController.createCheckout
 );
 
-export const Order = model<IOrder>("Order", orderSchema);
+router.get(
+  "/",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  OrderController.getAllOrders
+);
+
+router.get(
+  "/my-orders",
+  checkAuth(Role.USER, Role.ADMIN),
+  OrderController.getMyOrders
+);
+
+router.get(
+  "/:id",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.USER),
+  OrderController.getSingleOrder
+);
+
+
+
+export const OrderRoutes = router;

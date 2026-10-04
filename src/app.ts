@@ -8,14 +8,14 @@ import "./app/config/passport";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
 import { router } from "./app/routes";
-// import { WebhookController } from "./app/modules/webhook/webhook.controller"; /n
+import { WebhookController } from "./app/module/webhook/webhook.controller";
 
 const app = express()
-// app.post(
-//     "/webhook",
-//     express.raw({ type: "application/json" }), /n
-//     WebhookController.stripeWebhook
-// );
+app.post(
+    "/webhook",
+    express.raw({ type: "application/json" }),
+    WebhookController.stripeWebhook
+);
 app.use(expressSession({
     secret: envVars.EXPRESS_SESSION_SECRET,
     resave: false,

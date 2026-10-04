@@ -19,8 +19,8 @@ const startServer = async () => {
         server = app.listen(Number(envVars.PORT), () => {
             console.log(`Server is listening to port ${envVars.PORT}`);
         });
-        // await import("./app/modules/video/video.worker") ////////ata video feature import korar somy active korta hoba
-        // console.log("🎬 Video Worker initialized");
+        await import("./app/modules/video/video.worker") 
+        console.log("🎬 Video Worker initialized");
     } catch (error) {
         console.log(error);
     }
