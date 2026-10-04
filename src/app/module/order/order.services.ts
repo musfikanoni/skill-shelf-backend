@@ -3,10 +3,10 @@ import { Product } from "../product/product.model";
 import { User } from "../user/user.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
-import { Coupon } from "../coupon/coupon.model";
 import { PlanType } from "./order.interface";
 import { Payment } from "../payment/payment.model";
 import { QueryBuilder } from "../../utils/QueryBuiler";
+import { Coupon } from "../coupon/coupon.model";
 
 const createProductCheckout = async (
     userId: string,
