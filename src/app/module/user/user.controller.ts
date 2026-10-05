@@ -68,7 +68,7 @@ const getSingleUser = catchAsync(
 
 const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.params.id;
+    const userId = req.params.id as string;
     const verifiedToken = req.user;
 
     const payload = req.body;

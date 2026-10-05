@@ -19,7 +19,7 @@ const startServer = async () => {
         server = app.listen(Number(envVars.PORT), () => {
             console.log(`Server is listening to port ${envVars.PORT}`);
         });
-        await import("./app/modules/video/video.worker") 
+        await import("./app/module/video/video.worker") 
         console.log("🎬 Video Worker initialized");
     } catch (error) {
         console.log(error);

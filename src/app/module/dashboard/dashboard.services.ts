@@ -5,6 +5,8 @@ import { Payment } from "../payment/payment.model";
 import { Product } from "../product/product.model";
 import { Subscription } from "../subscription/subscription.model";
 import { User } from "../user/user.model";
+import { SubscriptionStatus } from "../user/user.interface";
+import { OrderStatus } from "../order/order.interface";
 
 
 const getDashboardOverview = async () => {
@@ -23,7 +25,7 @@ const getDashboardOverview = async () => {
 
  
   const totalProductOrders = await Order.countDocuments({
-    status: "PAID",
+    status: OrderStatus.PAID,
   });
   const totalEnrollments = await Enrollment.countDocuments({
     status: "PAID",
@@ -36,7 +38,7 @@ const getDashboardOverview = async () => {
 
 
   const activeSubscriptions = await Subscription.countDocuments({
-    status: "ACTIVE",
+    status: SubscriptionStatus.ACTIVE,
   });
 
   const totalProducts = await Product.countDocuments();
@@ -75,7 +77,7 @@ const getUserDashboard = async (userId: string) => {
 
     Subscription.findOne({
       user: userId,
-      status: "ACTIVE",
+      status: SubscriptionStatus.ACTIVE,
     }).populate("plan"),
 
     Payment.find({ user: userId, itemType: "PRODUCT" })

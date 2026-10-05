@@ -7,6 +7,7 @@ import { Subscription } from "../subscription/subscription.model";
 import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 import httpStatus from "http-status-codes";
+import { SubscriptionStatus } from "../user/user.interface";
 const resolveProductAccess = (
   productId: string,
   payments: any[],
@@ -211,7 +212,7 @@ const getMyUnlockedProducts = async (
 
     Subscription.findOne({
       user: userId,
-      status: "ACTIVE"
+      status: SubscriptionStatus.ACTIVE
     }).populate("plan"),
 
     Bundle.find({ user: userId })
@@ -274,7 +275,7 @@ const getUnlockSingleProduct = async (id: string, userId: string) => {
 
   const [payment, subscription, bundle] = await Promise.all([
     Payment.findOne({ user: userId, itemId: id, status: "PAID" }),
-    Subscription.findOne({ user: userId, status: "ACTIVE" }).populate("plan"),
+    Subscription.findOne({ user: userId, status: SubscriptionStatus.ACTIVE }).populate("plan"),
     Bundle.findOne({ user: userId, product: id })
   ]);
 

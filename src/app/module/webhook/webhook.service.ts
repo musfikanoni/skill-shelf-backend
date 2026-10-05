@@ -8,7 +8,7 @@ import { Product } from "../product/product.model";
 import { Enrollment } from "../enrollment/enrollment.model";
 import { Payment } from "../payment/payment.model";
 import mongoose from "mongoose";
-import { OrderStatus } from "../order/order.interface";
+import { OrderStatus, PlanType } from "../order/order.interface";
 import { Bundle } from "../bundle/bundle.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
@@ -185,8 +185,10 @@ export const handleStripeWebhook = async (event: any) => {
                 product: payment.itemId,
                 status: OrderStatus.PAID,
                 productQuantity: orderQty,
-                finalAmount: payment.amount,
-                planType: payment.planType,
+                finalAmount: payment.amount as number,
+                planType: payment.planType as PlanType,
+                discountAmount: 0,
+                currency: "USD",
               },
             ],
             { session: sessionDb }
@@ -203,7 +205,7 @@ export const handleStripeWebhook = async (event: any) => {
                 user: payment.user,
                 course: payment.itemId,
                 status: "PAID",
-                amount: payment.amount,
+                amount: payment.amount as number,
               },
             ],
             { session: sessionDb }
@@ -214,8 +216,8 @@ export const handleStripeWebhook = async (event: any) => {
           console.log("🔥 BUNDLE PURCHASE START");
           const bundle = await Bundle.findById(payment.itemId);
 
-          console.log("BUNDLE PRODUCTS:", bundle.products);
           if (!bundle) throw new AppError(httpStatus.NOT_FOUND, "Bundle not found");
+          console.log("BUNDLE PRODUCTS:", bundle.products);
 
           // ✅ extract IDs safely
           const productIds = bundle.products.map((p: any) =>
@@ -235,8 +237,8 @@ export const handleStripeWebhook = async (event: any) => {
                   course: id,
                   status: "PAID",
 
-                  amount: payment.amount,
-                  stripeSessionId: payment.stripeSessionId,
+                  amount: payment.amount as number,
+                  stripeSessionId: payment.stripeSessionId as string,
                 },
               ],
               { session: sessionDb }

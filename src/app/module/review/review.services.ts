@@ -8,6 +8,8 @@ import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
 import { IPlan } from "../plan/plan.interface";
 import { Subscription } from "../subscription/subscription.model";
+import { OrderStatus } from "../order/order.interface";
+import { SubscriptionStatus } from "../user/user.interface";
 
 
 const calculateRating = async (itemId: string, itemType: string) => {
@@ -132,14 +134,14 @@ const checkUserPurchased = async (
     const order = await Order.findOne({
       user: userId,
       product: itemId,
-      status: "PAID",
+      status: OrderStatus.PAID,
     });
 
     if (order) return true;
 
     const subscription = await Subscription.findOne({
       user: userId,
-      status: "ACTIVE",
+      status: SubscriptionStatus.ACTIVE,
     }).populate<{ plan: IPlan }>("plan");
 
     const products = subscription?.plan?.access?.products || [];
@@ -173,7 +175,7 @@ const checkUserPurchased = async (
  
     const subscription = await Subscription.findOne({
       user: userId,
-      status: "ACTIVE",
+      status: SubscriptionStatus.ACTIVE,
     }).populate<{ plan: IPlan }>("plan");
 
     const courses = subscription?.plan?.access?.courses || [];

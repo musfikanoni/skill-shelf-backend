@@ -38,7 +38,7 @@ app.use("/api/v1", router)
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).json({
-        message: "Welcome to MAXXMA System Backend"
+        message: "Welcome to SkillShelf System Backend"
     })
 })
 
