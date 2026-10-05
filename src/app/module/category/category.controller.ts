@@ -36,7 +36,7 @@ const getAllCategories = async (req: Request, res: Response) => {
 };
 
 const getSingleCategory = async (req: Request, res: Response) => {
-  const result = await CategoryService.getSingleCategory(req.params.id);
+  const result = await CategoryService.getSingleCategory(req.params.id as string);
 
   sendResponse(res, {
     success: true,
@@ -47,7 +47,7 @@ const getSingleCategory = async (req: Request, res: Response) => {
 };
 
 const updateCategory = async (req: Request, res: Response) => {
-  const id = req.params.id;
+  const id = req.params.id as string;
 
   // 🆕 uploaded file from S3 middleware
   const file = (req.files as Express.MulterS3.File[])?.[0];
@@ -82,7 +82,7 @@ const updateCategory = async (req: Request, res: Response) => {
 };
 
 const deleteCategory = async (req: Request, res: Response) => {
-  const result = await CategoryService.deleteCategory(req.params.id);
+  const result = await CategoryService.deleteCategory(req.params.id as string);
 
   sendResponse(res, {
     success: true,

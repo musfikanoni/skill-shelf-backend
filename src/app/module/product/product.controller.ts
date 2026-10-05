@@ -57,7 +57,7 @@ const getAllProducts = catchAsync(async (req, res) => {
 const getSingleProduct = catchAsync(async (req: Request, res: Response) => {
 
   // const user = req.user as JwtPayload;
-const id = req.params.id;
+const id = req.params.id as string;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new AppError(400, "Invalid Product ID");
@@ -113,7 +113,7 @@ const updateProduct = catchAsync(async (req: Request, res: Response) => {
     payload["files.vip"] = getFileUrl(files.vipFile[0]);
   }
 
-  const result = await ProductService.updateProduct(req.params.id, payload);
+  const result = await ProductService.updateProduct(req.params.id as string, payload);
 
   sendResponse(res, {
     success: true,
@@ -124,7 +124,7 @@ const updateProduct = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const result = await ProductService.deleteProduct(req.params.id);
+  const result = await ProductService.deleteProduct(req.params.id as string);
 
   sendResponse(res, {
     success: true,
@@ -138,7 +138,7 @@ const deleteProduct = catchAsync(async (req: Request, res: Response, next: NextF
 const getUnlockSingleProduct = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const user = req.user as JwtPayload;
   const result = await ProductService.getUnlockSingleProduct(
-    req.params.id,
+    req.params.id as string,
     user.userId
   );
 

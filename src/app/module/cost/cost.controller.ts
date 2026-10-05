@@ -31,7 +31,7 @@ const getAllCosts = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingleCost = catchAsync(async (req: Request, res: Response) => {
-    const result = await CostService.getSingleCost(req.params.id);
+    const result = await CostService.getSingleCost(req.params.id as string);
 
     sendResponse(res, {
         success: true,
@@ -42,7 +42,7 @@ const getSingleCost = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateCost = catchAsync(async (req: Request, res: Response) => {
-    const result = await CostService.updateCost(req.params.id, req.body);
+    const result = await CostService.updateCost(req.params.id as string, req.body);
 
     sendResponse(res, {
         success: true,
@@ -53,7 +53,7 @@ const updateCost = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteCost = catchAsync(async (req: Request, res: Response) => {
-    await CostService.deleteCost(req.params.id);
+    await CostService.deleteCost(req.params.id as string);
 
     sendResponse(res, {
         success: true,

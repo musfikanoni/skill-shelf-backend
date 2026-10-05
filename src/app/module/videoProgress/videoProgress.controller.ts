@@ -49,7 +49,7 @@ const getCourseProgress = catchAsync(async (req: Request, res: Response) => {
     const result =
         await VideoProgressService.getCourseProgress(
             user.userId,
-            courseId
+            courseId as string
         );
 
     sendResponse(res, {
@@ -66,7 +66,7 @@ const getVideoResume = catchAsync(async (req: Request, res: Response) => {
 
     const result = await VideoProgressService.getVideoResume(
         user.userId,
-        videoId
+        videoId as string
     );
 
     sendResponse(res, {
@@ -92,7 +92,7 @@ const getNextVideo = catchAsync(async (req: Request, res: Response) => {
 
   const result = await VideoProgressService.getNextVideo(
     user.userId,
-    courseId,
+    courseId as string,
     Number(currentOrder)
   );
 

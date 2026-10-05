@@ -45,7 +45,7 @@ const getAllCourses = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSinglePublicCourse = catchAsync(async (req: Request, res: Response) => {
-  const result = await CourseService.getSinglePublicCourse(req.params.id);
+  const result = await CourseService.getSinglePublicCourse(req.params.id as string);
 
   sendResponse(res, {
     success: true,
@@ -56,7 +56,7 @@ const getSinglePublicCourse = catchAsync(async (req: Request, res: Response) => 
 });
 
 const getSingleCourse = catchAsync(async (req: Request, res: Response) => {
-  const result = await CourseService.getSingleCourse(req.params.id);
+  const result = await CourseService.getSingleCourse(req.params.id as string);
 
   sendResponse(res, {
     success: true,
@@ -74,7 +74,7 @@ const updateCourse = catchAsync(async (req: Request, res: Response) => {
     req.body.thumbnail = getFileUrl(files[0]);
   }
 
-  const result = await CourseService.updateCourse(req.params.id, req.body);
+  const result = await CourseService.updateCourse(req.params.id as string, req.body);
 
   sendResponse(res, {
     success: true,
@@ -85,7 +85,7 @@ const updateCourse = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteCourse = catchAsync(async (req: Request, res: Response) => {
-  const result = await CourseService.deleteCourse(req.params.id);
+  const result = await CourseService.deleteCourse(req.params.id as string);
 
   sendResponse(res, {
     success: true,

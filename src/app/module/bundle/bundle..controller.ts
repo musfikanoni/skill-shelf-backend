@@ -30,7 +30,7 @@ const getSingleBundle = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const result = await BundleService.getSingleBundle(id);
+    const result = await BundleService.getSingleBundle(id as string);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -45,7 +45,7 @@ const getBundleByIdPublic = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const result = await BundleService.getBundleByIdPublic(id);
+    const result = await BundleService.getBundleByIdPublic(id as string);
 
     sendResponse(res, {
       success: true,

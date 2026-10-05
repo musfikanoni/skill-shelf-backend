@@ -16,7 +16,7 @@ const createMilestone = catchAsync(async (req: Request, res: Response) => {
 
 const getMilestonesByCourse = catchAsync(async (req: Request, res: Response) => {
   const result = await MilestoneService.getMilestonesByCourse(
-    req.params.courseId
+    req.params.courseId as string
   );
 
   sendResponse(res, {
@@ -29,7 +29,7 @@ const getMilestonesByCourse = catchAsync(async (req: Request, res: Response) => 
 
 const updateMilestone = catchAsync(async (req: Request, res: Response) => {
   const result = await MilestoneService.updateMilestone(
-    req.params.id,
+    req.params.id as string,
     req.body
   );
 
@@ -42,7 +42,7 @@ const updateMilestone = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteMilestone = catchAsync(async (req: Request, res: Response) => {
-  const result = await MilestoneService.deleteMilestone(req.params.id);
+  const result = await MilestoneService.deleteMilestone(req.params.id as string);
 
   sendResponse(res, {
     success: true,

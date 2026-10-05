@@ -31,7 +31,7 @@ const getReviews = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateReview = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const result = await ReviewService.updateReview(req.params.id, req.body);
+  const result = await ReviewService.updateReview(req.params.id as string, req.body);
 
   sendResponse(res, {
     success: true,
@@ -42,7 +42,7 @@ const updateReview = catchAsync(async (req: Request, res: Response, next: NextFu
 });
 
 const deleteReview = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const result = await ReviewService.deleteReview(req.params.id);
+  const result = await ReviewService.deleteReview(req.params.id as string);
 
   sendResponse(res, {
     success: true,

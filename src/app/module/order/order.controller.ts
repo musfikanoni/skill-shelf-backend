@@ -42,7 +42,7 @@ const getAllOrders = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingleOrder = catchAsync(async (req: Request, res: Response) => {
-  const result = await OrderService.getSingleOrder(req.params.id);
+  const result = await OrderService.getSingleOrder(req.params.id as string);
 
   sendResponse(res, {
     success: true,

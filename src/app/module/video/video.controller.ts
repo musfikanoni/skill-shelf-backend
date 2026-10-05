@@ -31,7 +31,7 @@ const getSecureVideo = async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
 
   const result = await VideoService.getSecureVideo(
-    req.params.id,
+    req.params.id as string,
     user.userId
   );
 
@@ -45,7 +45,7 @@ const getSecureVideo = async (req: Request, res: Response) => {
 
 const publishVideo = catchAsync(async (req: Request, res: Response) => {
   const result = await VideoService.updateVideo(
-    req.params.id,
+    req.params.id as string,
     { isPublished: true }
   );
 
@@ -59,7 +59,7 @@ const publishVideo = catchAsync(async (req: Request, res: Response) => {
 
 const getVideosByMilestone = catchAsync(async (req: Request, res: Response) => {
   const result = await VideoService.getVideosByMilestone(
-    req.params.milestoneId
+    req.params.milestoneId as string
   );
 
   sendResponse(res, {
@@ -70,7 +70,7 @@ const getVideosByMilestone = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const deleteVideo = catchAsync(async (req: Request, res: Response) => {
-  const result = await VideoService.deleteVideo(req.params.id);
+  const result = await VideoService.deleteVideo(req.params.id as string);
 
   sendResponse(res, {
     success: true,

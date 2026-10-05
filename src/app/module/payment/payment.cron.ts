@@ -11,6 +11,8 @@ cron.schedule("*/5 * * * *", async () => {
   });
 
   for (const p of expired) {
+    if (!p.stripeSessionId) continue;
+
     const session = await stripe.checkout.sessions.retrieve(
       p.stripeSessionId
     );

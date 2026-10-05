@@ -23,7 +23,7 @@ const createCheckoutSession = async (
 };
 
 // ===============================
-// 👤 USER: My Subscription
+// USER: My Subscription
 // ===============================
 const getMySubscription = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
@@ -39,7 +39,7 @@ const getMySubscription = catchAsync(async (req: Request, res: Response) => {
 });
 
 // ===============================
-// 🧑‍💼 ADMIN: All Subscriptions
+// ADMIN: All Subscriptions
 // ===============================
 const getAllSubscriptions = catchAsync(async (req: Request, res: Response) => {
   const result = await SubscriptionService.getAllSubscriptions();
@@ -56,7 +56,7 @@ const getAllSubscriptions = catchAsync(async (req: Request, res: Response) => {
 // 🔍 ADMIN: Single Subscription
 // ===============================
 const getSingleSubscription = catchAsync(async (req: Request, res: Response) => {
-  const result = await SubscriptionService.getSingleSubscription(req.params.id);
+  const result = await SubscriptionService.getSingleSubscription(req.params.id as string);
 
   sendResponse(res, {
     success: true,

@@ -60,7 +60,7 @@ const updateCommissionStatus = catchAsync(
   async (req: Request, res: Response) => {
     const result =
       await AffiliateService.updateCommissionStatus(
-        req.params.id,
+        req.params.id as string,
         req.body.status
       );
 
@@ -76,7 +76,7 @@ const updateCommissionStatus = catchAsync(
 const deleteAffiliate = catchAsync(
   async (req: Request, res: Response) => {
     const result = await AffiliateService.deleteAffiliate(
-      req.params.id
+      req.params.id as string
     );
 
     sendResponse(res, {

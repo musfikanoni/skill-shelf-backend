@@ -38,7 +38,7 @@ const getAllEnrollments = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingleEnrollment = catchAsync(async (req: Request, res: Response) => {
-  const result = await EnrollmentService.getSingleEnrollment(req.params.id);
+  const result = await EnrollmentService.getSingleEnrollment(req.params.id as string);
 
   sendResponse(res, {
     success: true,
