@@ -3,7 +3,7 @@ import httpStatus from "http-status-codes";
 import { sendResponse } from "../../utils/sendResponse";
 import { ProductService } from "./product.services";
 import { catchAsync } from "../../utils/catchAsync";
-import { getFileUrl } from "../../config/S3Client.config";
+import { getFileUrl } from "../../config/cloudinary.config";
 import { JwtPayload } from "jsonwebtoken";
 import mongoose from "mongoose";
 import AppError from "../../errorHelpers/AppError";

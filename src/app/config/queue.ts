@@ -1,15 +1,8 @@
-// import { Queue } from "bullmq";
-
-// export const videoQueue = new Queue("video-processing", {
-//   connection: {
-//     host: "127.0.0.1",
-//     port: 6379,
-//   },
-// });
-
-
 import { Queue } from "bullmq";
 import { envVars } from "./env";
+
+// Upstash Redis requires TLS — detect by hostname
+const isUpstash = envVars.REDIS_HOST?.includes("upstash.io");
 
 export const videoQueue = new Queue("video-processing", {
   connection: {
@@ -17,5 +10,7 @@ export const videoQueue = new Queue("video-processing", {
     port: Number(envVars.REDIS_PORT),
     username: envVars.REDIS_USERNAME,
     password: envVars.REDIS_PASSWORD,
+    // Enable TLS for Upstash cloud Redis
+    ...(isUpstash && { tls: {} }),
   },
 });

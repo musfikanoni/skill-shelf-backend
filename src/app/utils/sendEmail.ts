@@ -6,15 +6,15 @@ import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 
 const transporter = nodemailer.createTransport({
-    secure: true,
+    secure: false, // Mailtrap (port 2525) uses STARTTLS, not SSL — must be false
     auth: {
         user: envVars.EMAIL_SENDER.SMTP_USER,
         pass: envVars.EMAIL_SENDER.SMTP_PASS
     },
     port: Number(envVars.EMAIL_SENDER.SMTP_PORT),
     host: envVars.EMAIL_SENDER.SMTP_HOST,
-     tls: {
-        rejectUnauthorized: false 
+    tls: {
+        rejectUnauthorized: false
     }
 })
 console.log("SMTP_USER:", envVars.EMAIL_SENDER.SMTP_USER);
@@ -49,7 +49,7 @@ export const sendEmail = async ({
         const templatePath = path.join(__dirname, `templates/${templateName}.ejs`)
         const html = await ejs.renderFile(templatePath, templateData)
         const info = await transporter.sendMail({
-            from: `"Paeyking" <${envVars.EMAIL_SENDER.SMTP_FROM}>`,
+            from: `"SkillShelf" <${envVars.EMAIL_SENDER.SMTP_FROM}>`,
             to: to,
             subject: subject,
             html: html,

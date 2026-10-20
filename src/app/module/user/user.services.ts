@@ -19,7 +19,7 @@ import { QueryBuilder } from "../../utils/QueryBuiler";
 import { generateOtp } from "../otp/otp.service";
 import { redisClient } from "../../config/redis.config";
 import { sendEmail } from "../../utils/sendEmail";
-import { deleteFileFromS3 } from "../../config/S3Client.config";
+import { deleteFileFromCloudinary, extractPublicId, getFileUrl } from "../../config/cloudinary.config";
 
 const createUser = async (payload: Partial<IUser>) => {
   const { email, password, referredByCode, ...rest } = payload;
@@ -72,7 +72,7 @@ const createUser = async (payload: Partial<IUser>) => {
   });
 
   await sendEmail({
-    to: email,
+    to: email as string,
     subject: "Account Verification OTP",
     templateName: "otp",
     templateData: {
@@ -236,9 +236,9 @@ const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken:
 //   return updated;
 // };
 
-export const getS3KeyFromUrl = (url: string) => {
-  const parts = url.split(`/${envVars.S3.S3_BUCKET_NAME}/`);
-  return parts[1] ?? "";
+export const getS3KeyFromUrl = (url: string): string => {
+  // For Cloudinary URLs, extract the public_id
+  return extractPublicId(url);
 };
 
 const updateMyProfile = async ({
@@ -273,11 +273,11 @@ const updateMyProfile = async ({
   // ===============================
   if (file) {
     if (user.picture) {
-      const oldKey = getS3KeyFromUrl(user.picture);
-      if (oldKey) await deleteFileFromS3(oldKey);
+      const oldPublicId = getS3KeyFromUrl(user.picture);
+      if (oldPublicId) await deleteFileFromCloudinary(oldPublicId);
     }
-
-    filteredPayload.picture = file.location;
+    // multer-storage-cloudinary stores the URL in file.path
+    filteredPayload.picture = getFileUrl(file);
   }
 
   // ===============================
@@ -328,7 +328,7 @@ export const getMyLibrary = async (userId: string) => {
   // =========================
   const subscription = await Subscription.findOne({
     user: userId,
-    status: "ACTIVE",
+    status: SubscriptionStatus.ACTIVE,
   }).populate<{ plan: IPlan }>("plan");
 
   const planAccess = subscription?.plan?.access;

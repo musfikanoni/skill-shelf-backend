@@ -35,13 +35,12 @@ interface EnvConfig {
   REDIS_PORT: string;
   REDIS_USERNAME: string;
   REDIS_PASSWORD: string;
-  S3: {
-    S3_ACCESS_KEY: string;
-    S3_SECRET_KEY: string;
-    S3_REGION: string;
-    S3_BUCKET_NAME: string;
-    S3_ENDPOINT: string;
-  }
+  // Cloudinary (replaces AWS S3)
+  CLOUDINARY: {
+    CLOUD_NAME: string;
+    API_KEY: string;
+    API_SECRET: string;
+  };
   STRIPE_SECRET_KEY: string;
   STRIPE_PUBLISHABLE_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
@@ -60,16 +59,11 @@ const loadEnvVariables = (): EnvConfig => {
     "SUPER_ADMIN_PASSWORD",
     "JWT_REFRESH_SECRET",
     "JWT_REFRESH_EXPIRES",
-    "GOOGLE_CLIENT_SECRET",
     "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
     "GOOGLE_CALLBACK_URL",
     "EXPRESS_SESSION_SECRET",
     "FRONTEND_URL",
-    "FRONTEND_LOCALHOST_URL",
-    "FRONTEND_DOMAIN_URL",
-    "DASHBOARD_URL",
-    "DASHBOARD_LOCALHOST_URL",
-    "DASHBOARD_DOMAIN_URL",
     "SMTP_PASS",
     "SMTP_PORT",
     "SMTP_HOST",
@@ -77,13 +71,9 @@ const loadEnvVariables = (): EnvConfig => {
     "SMTP_FROM",
     "REDIS_HOST",
     "REDIS_PORT",
-    "REDIS_USERNAME",
-    "REDIS_PASSWORD",
-    "S3_ACCESS_KEY",
-    "S3_SECRET_KEY",
-    "S3_REGION",
-    "S3_BUCKET_NAME",
-    "S3_ENDPOINT",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET",
     "STRIPE_SECRET_KEY",
     "STRIPE_PUBLISHABLE_KEY",
     "STRIPE_WEBHOOK_SECRET",
@@ -113,11 +103,11 @@ const loadEnvVariables = (): EnvConfig => {
     GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL as string,
     EXPRESS_SESSION_SECRET: process.env.EXPRESS_SESSION_SECRET as string,
     FRONTEND_URL: process.env.FRONTEND_URL as string,
-    FRONTEND_LOCALHOST_URL: process.env.FRONTEND_LOCALHOST_URL as string,
-    FRONTEND_DOMAIN_URL: process.env.FRONTEND_DOMAIN_URL as string,
-    DASHBOARD_URL: process.env.DASHBOARD_URL as string,
-    DASHBOARD_LOCALHOST_URL: process.env.DASHBOARD_LOCALHOST_URL as string,
-    DASHBOARD_DOMAIN_URL: process.env.DASHBOARD_DOMAIN_URL as string,
+    FRONTEND_LOCALHOST_URL: process.env.FRONTEND_LOCALHOST_URL || "",
+    FRONTEND_DOMAIN_URL: process.env.FRONTEND_DOMAIN_URL || "",
+    DASHBOARD_URL: process.env.DASHBOARD_URL || "",
+    DASHBOARD_LOCALHOST_URL: process.env.DASHBOARD_LOCALHOST_URL || "",
+    DASHBOARD_DOMAIN_URL: process.env.DASHBOARD_DOMAIN_URL || "",
 
     EMAIL_SENDER: {
       SMTP_USER: process.env.SMTP_USER as string,
@@ -128,14 +118,12 @@ const loadEnvVariables = (): EnvConfig => {
     },
     REDIS_HOST: process.env.REDIS_HOST as string,
     REDIS_PORT: process.env.REDIS_PORT as string,
-    REDIS_USERNAME: process.env.REDIS_USERNAME as string,
-    REDIS_PASSWORD: process.env.REDIS_PASSWORD as string,
-    S3: {
-      S3_ACCESS_KEY: process.env.S3_ACCESS_KEY as string,
-      S3_SECRET_KEY: process.env.S3_SECRET_KEY as string,
-      S3_REGION: process.env.S3_REGION as string,
-      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME as string,
-      S3_ENDPOINT: process.env.S3_ENDPOINT as string,
+    REDIS_USERNAME: process.env.REDIS_USERNAME || "default",
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD || "",
+    CLOUDINARY: {
+      CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME as string,
+      API_KEY: process.env.CLOUDINARY_API_KEY as string,
+      API_SECRET: process.env.CLOUDINARY_API_SECRET as string,
     },
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY as string,

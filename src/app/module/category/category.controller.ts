@@ -2,16 +2,15 @@ import { Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import { CategoryService } from "./category.services";
 import { sendResponse } from "../../utils/sendResponse";
-import { getS3KeyFromUrl } from "../user/user.services";
-import { deleteFileFromS3 } from "../../config/S3Client.config";
+import { getCloudinaryKeyFromUrl, deleteFileFromCloudinary, getFileUrl } from "../../config/cloudinary.config";
 
 const createCategory = async (req: Request, res: Response) => {
-    const file = (req.files as Express.MulterS3.File[])?.[0];
+    const file = (req.files as Express.Multer.File[])?.[0];
 
   const payload = {
     ...req.body,
 
-    image: file?.location || req.body.image,
+    image: file?.path || (file as any)?.secure_url || req.body.image,
   };
 
   const result = await CategoryService.createCategory(payload);
@@ -50,7 +49,7 @@ const updateCategory = async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
   // 🆕 uploaded file from S3 middleware
-  const file = (req.files as Express.MulterS3.File[])?.[0];
+  const file = (req.files as Express.Multer.File[])?.[0];
 
   // find existing category
   const existingCategory = await CategoryService.getSingleCategory(id);
@@ -64,11 +63,11 @@ const updateCategory = async (req: Request, res: Response) => {
   if (file) {
     // delete old image if exists
     if (existingCategory?.image) {
-      const oldKey = getS3KeyFromUrl(existingCategory.image);
-      if (oldKey) await deleteFileFromS3(oldKey);
+      const oldKey = getCloudinaryKeyFromUrl(existingCategory.image);
+      if (oldKey) await deleteFileFromCloudinary(oldKey);
     }
 
-    payload.image = file.location;
+    payload.image = getFileUrl(file);
   }
 
   const result = await CategoryService.updateCategory(id, payload);

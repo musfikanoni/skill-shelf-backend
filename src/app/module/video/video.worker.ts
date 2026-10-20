@@ -1,8 +1,37 @@
 import { Worker } from "bullmq";
 import fs from "fs";
-import { downloadFileFromS3 } from "../../config/S3Client.config";
+import https from "https";
+import path from "path";
 import { getVideoDuration } from "../../utils/getVideoDuration";
 import { Video } from "./video.model";
+
+/**
+ * Download a Cloudinary video URL to a local temp file
+ * Replaces the old downloadFileFromS3 since Cloudinary serves public URLs
+ */
+const downloadFromCloudinary = (url: string): Promise<string> => {
+  const fileName = `video_${Date.now()}${path.extname(url.split("?")[0]) || ".mp4"}`;
+  const localPath = path.join(process.cwd(), "tmp", fileName);
+
+  // Ensure tmp dir exists
+  if (!fs.existsSync(path.join(process.cwd(), "tmp"))) {
+    fs.mkdirSync(path.join(process.cwd(), "tmp"), { recursive: true });
+  }
+
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(localPath);
+    https.get(url, (response) => {
+      response.pipe(file);
+      file.on("finish", () => {
+        file.close();
+        resolve(localPath);
+      });
+    }).on("error", (err) => {
+      fs.unlink(localPath, () => {}); // cleanup on error
+      reject(err);
+    });
+  });
+};
 
 export const videoWorker = new Worker(
   "video-processing",
@@ -12,8 +41,8 @@ export const videoWorker = new Worker(
     console.log("🎬 Processing video:", videoId);
 
     try {
-      // 1️⃣ Download file
-      const localPath = await downloadFileFromS3(videoKey);
+      // 1️⃣ Download file from Cloudinary URL
+      const localPath = await downloadFromCloudinary(videoKey);
 
       // 2️⃣ Extract duration
       const duration = await getVideoDuration(localPath);
@@ -40,6 +69,8 @@ export const videoWorker = new Worker(
       port: Number(process.env.REDIS_PORT),
       username: process.env.REDIS_USERNAME,
       password: process.env.REDIS_PASSWORD,
+      // Upstash Redis requires TLS
+      tls: process.env.REDIS_HOST?.includes("upstash.io") ? {} : undefined,
     },
     concurrency: 3,
   }

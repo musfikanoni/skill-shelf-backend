@@ -4,7 +4,7 @@ import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { parseFormDataMiddleware } from "../../middlewares/parseFormDataMiddleware";
-import { FileTypes, upload } from "../../config/S3Client.config";
+import { FileTypes, upload } from "../../config/cloudinary.config";
 import { createCategory, updateCategory } from "./category.validation";
 
 const router = express.Router();

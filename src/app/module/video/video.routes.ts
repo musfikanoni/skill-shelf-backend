@@ -3,7 +3,7 @@ import { VideoController } from "./video.controller";
 import { createVideoZodSchema } from "./video.validation";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
-import { upload } from "../../config/S3Client.config";
+import { upload } from "../../config/cloudinary.config";
 import { validateRequest } from "../../middlewares/validateRequest";
 
 const router = express.Router();

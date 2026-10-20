@@ -3,7 +3,7 @@ import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { createCourseZodSchema, updateCourseZodSchema } from "./courses.validation";
-import { FileTypes, upload } from "../../config/S3Client.config";
+import { FileTypes, upload } from "../../config/cloudinary.config";
 import { parseFormDataMiddleware } from "../../middlewares/parseFormDataMiddleware";
 import { checkPlanAccess } from "../../middlewares/checkPlanAccess";
 import { CourseController } from "./courses.controller";

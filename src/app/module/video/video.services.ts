@@ -2,8 +2,8 @@ import { Video } from "./video.model";
 import { Milestone } from "../milestone/milestone.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
-import { deleteFileFromS3 } from "../../config/S3Client.config";
-import { generateSignedUrl } from "../../config/generateSignedUrl";
+import { deleteFileFromS3 } from "../../config/cloudinary.config";
+// generateSignedUrl replaced by Cloudinary URL (stored directly as public URL)
 // import { Enrollment } from "../enrollment/enrollment.model";
 import { Payment } from "../payment/payment.model";
 import { videoQueue } from "../../config/queue";
@@ -73,8 +73,9 @@ console.log("video.course type:", typeof video.course.toString());
 console.log("video.course value:", video.course);
 
 
-  // 2️⃣ Generate signed URL
-  const signedUrl = await generateSignedUrl(video.videoKey);
+  // 2️⃣ Cloudinary stores video as public URL — use directly
+  // (videoKey holds the full Cloudinary URL after upload)
+  const signedUrl = video.videoKey;
 
   return {
     ...video.toObject(),

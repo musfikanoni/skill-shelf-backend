@@ -1,33 +1,34 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { envVars } from "./env";
-import { s3Client } from "./S3Client.config";
+import { cloudinary } from "./cloudinary.config";
 
 /**
- * Generate temporary signed URL for private S3 file
- * @param key S3 object key (stored in DB)
- * @param expiresIn seconds (default 1 hour)
+ * Generate a temporary signed URL for a Cloudinary private/restricted asset.
+ * For public Cloudinary videos the stored URL can be used directly,
+ * but this helper is kept for parity with the old S3 signed-URL API.
+ *
+ * @param publicIdOrUrl  Cloudinary public_id OR full Cloudinary URL
+ * @param expiresIn      Validity in seconds (default 1 hour)
  */
 export const generateSignedUrl = async (
-    key: string,
-    expiresIn: number = 60 * 60 // 1 hour
+  publicIdOrUrl: string,
+  expiresIn: number = 60 * 60 // 1 hour
 ): Promise<string> => {
-    try {
-        const command = new GetObjectCommand({
-            Bucket: envVars.S3.S3_BUCKET_NAME!,
-            Key: key,
-            ResponseContentType: "video/mp4",
-        });
-
-        const signedUrl = await getSignedUrl(
-            s3Client,
-            command,
-            { expiresIn }
-        );
-
-        return signedUrl;
-    } catch (error) {
-        console.error("Signed URL generation failed:", error);
-        throw new Error("Failed to generate signed URL");
+  try {
+    // If it's already a full URL, return as-is (Cloudinary public delivery)
+    if (publicIdOrUrl.startsWith("http")) {
+      return publicIdOrUrl;
     }
+
+    // Generate a signed Cloudinary URL for private/restricted resources
+    const signedUrl = cloudinary.url(publicIdOrUrl, {
+      secure: true,
+      resource_type: "video",
+      sign_url: true,
+      expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+    });
+
+    return signedUrl;
+  } catch (error) {
+    console.error("Cloudinary signed URL generation failed:", error);
+    throw new Error("Failed to generate signed URL");
+  }
 };

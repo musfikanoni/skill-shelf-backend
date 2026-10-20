@@ -5,7 +5,7 @@ import { Role } from "./user.interface";
 import { updateUserZodSchema } from "./user.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { parseFormDataMiddleware } from "../../middlewares/parseFormDataMiddleware";
-import { FileTypes, upload } from "../../config/S3Client.config";
+import { FileTypes, upload } from "../../config/cloudinary.config";
 
 
 const router = Router();

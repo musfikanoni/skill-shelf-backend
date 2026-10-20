@@ -3,13 +3,13 @@ import { catchAsync } from "../../utils/catchAsync";
 import { JwtPayload } from "jsonwebtoken";
 import { sendResponse } from "../../utils/sendResponse";
 import { CourseService } from "./courses.services";
-import { getFileUrl } from "../../config/S3Client.config";
+import { getFileUrl } from "../../config/cloudinary.config";
 import httpStatus from "http-status-codes";
 
 const createCourse = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
 
-  const files = req.files as Express.MulterS3.File[];
+  const files = req.files as Express.Multer.File[];
 
   if (!files || files.length === 0) {
     throw new Error("Thumbnail is required");
@@ -68,7 +68,7 @@ const getSingleCourse = catchAsync(async (req: Request, res: Response) => {
 
 const updateCourse = catchAsync(async (req: Request, res: Response) => {
 
-  const files = req.files as Express.MulterS3.File[];
+  const files = req.files as Express.Multer.File[];
 
   if (files && files.length > 0) {
     req.body.thumbnail = getFileUrl(files[0]);
