@@ -17,7 +17,7 @@ import { IPlan } from "../plan/plan.interface";
 import { nanoid } from "nanoid";
 import { QueryBuilder } from "../../utils/QueryBuiler";
 import { generateOtp } from "../otp/otp.service";
-import { redisClient } from "../../config/redis.config";
+import { redisClient, ensureRedisConnected } from "../../config/redis.config";
 import { sendEmail } from "../../utils/sendEmail";
 import { deleteFileFromCloudinary, extractPublicId, getFileUrl } from "../../config/cloudinary.config";
 
@@ -63,23 +63,40 @@ const createUser = async (payload: Partial<IUser>) => {
     throw new AppError(httpStatus.BAD_REQUEST, "Failed to register user");
   }
 
+  // =========================================================
+  // 🔐 OTP — Send verification email
+  // If Redis or email fails, rollback: delete the created user
+  // so they can register again cleanly.
+  // (Serverless/Vercel: Redis connection may be closed on cold
+  //  start — ensureRedisConnected() reconnects automatically)
+  // =========================================================
+  try {
+    await ensureRedisConnected();
 
-  const redisKey = `otp:${email}`;
-  const otp = generateOtp();
+    const redisKey = `otp:${email}`;
+    const otp = generateOtp();
 
-  await redisClient.set(redisKey, otp, {
-    expiration: { type: "EX", value: 120 },
-  });
+    await redisClient.set(redisKey, otp, {
+      expiration: { type: "EX", value: 120 },
+    });
 
-  await sendEmail({
-    to: email as string,
-    subject: "Account Verification OTP",
-    templateName: "otp",
-    templateData: {
-      name: user.name,
-      otp,
-    },
-  });
+    await sendEmail({
+      to: email as string,
+      subject: "Account Verification OTP",
+      templateName: "otp",
+      templateData: {
+        name: user.name,
+        otp,
+      },
+    });
+  } catch (otpError) {
+    // Rollback: delete the user so they can re-register
+    await User.findByIdAndDelete(user._id);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to send verification OTP. Please try again."
+    );
+  }
 
   return { user };
 };

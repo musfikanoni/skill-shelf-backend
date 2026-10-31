@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { redisClient } from "../../config/redis.config";
+import { redisClient, ensureRedisConnected } from "../../config/redis.config";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { envVars } from "../../config/env";
@@ -24,6 +24,7 @@ const verifySignupOtp = async (email: string, otp: number) => {
 
   // Step 2: get OTP from Redis
   const redisKey = `otp:${email}`;
+  await ensureRedisConnected();
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp) {
@@ -56,6 +57,7 @@ const resendOtp = async (email: string) => {
 
   // Step 3: save OTP in Redis with expiry (2 minutes)
   const redisKey = `otp:${email}`;
+  await ensureRedisConnected();
   await redisClient.set(redisKey, otp, { expiration: { type: "EX", value: 120 } });
 
   // Step 4: send OTP via email
@@ -96,6 +98,7 @@ const resendForgotPasswordOtp = async (email: string) => {
   const redisKey = `otp:reset:${email}`;
 
   // 3️⃣ Prevent spam resend
+  await ensureRedisConnected();
   const existingOtp = await redisClient.get(redisKey);
 
   if (existingOtp) {
@@ -131,6 +134,7 @@ const resendForgotPasswordOtp = async (email: string) => {
 
 const verifyResetOtp = async (email: string, otp: string) => {
   const redisKey = `otp:reset:${email}`;
+  await ensureRedisConnected();
   const savedOtp = await redisClient.get(redisKey);
 
   if (!savedOtp) {

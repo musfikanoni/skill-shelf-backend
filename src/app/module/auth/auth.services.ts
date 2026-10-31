@@ -8,7 +8,7 @@ import { createNewAccessTokenWithRefreshToken } from "../../utils/userTokens";
 import { IAuthProvider } from "../user/user.interface";
 import { User } from "../user/user.model";
 import { sendEmail } from "../../utils/sendEmail";
-import { redisClient } from "../../config/redis.config";
+import { redisClient, ensureRedisConnected } from "../../config/redis.config";
 import { generateOtp } from "../otp/otp.service";
 
 const getNewAccessToken = async (refreshToken: string) => {
@@ -30,6 +30,7 @@ const resetPassword = async (
   }
 
   const verifiedKey = `otp:reset:verified:${email}`;
+  await ensureRedisConnected();
   const isVerified = await redisClient.get(verifiedKey);
 
   if (!isVerified) {
@@ -70,6 +71,7 @@ const forgotPassword = async (email: string) => {
 
   const redisKey = `otp:reset:${email}`;
 
+  await ensureRedisConnected();
   const existingOtp = await redisClient.get(redisKey);
   if (existingOtp) {
     throw new AppError(429, "OTP already sent. Please wait 2 minutes.");
