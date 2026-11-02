@@ -149,14 +149,27 @@ const getSingleOrder = async (id: string) => {
         throw new AppError(httpStatus.NOT_FOUND, "Order not found");
     }
 
-    const product = await Product.findById(payment.itemId).populate("category");
+    let product: any = null;
+    if (payment.itemType === "BUNDLE") {
+        const bundle = await Bundle.findById(payment.itemId);
+        product = bundle ? {
+            _id: bundle._id,
+            name: `${bundle.name} (Bundle)`,
+            images: [],
+            price: { basic: bundle.price, pro: bundle.price, vip: bundle.price },
+            category: { name: "Bundle" }
+        } : null;
+    } else {
+        product = await Product.findById(payment.itemId).populate("category");
+    }
 
     return {
         _id: payment._id,
         product,
         user: payment.user,
-        planType: payment.planType,
-        quantity: payment.quantity,
+        itemType: payment.itemType,
+        planType: payment.planType || "Standard",
+        quantity: payment.quantity || 1,
         amount: payment.amount,
         status: payment.status,
         createdAt: payment.createdAt,
@@ -204,9 +217,11 @@ export const getMyOrders = async (
             _id: bundle._id,
             name: `${bundle.name} (Bundle)`,
             images: [],
+            files: {},
           },
           isPurchased: payment.status === "PAID",
           purchasedPlan: "Bundle",
+          planType: "Bundle",
           quantity: 1,
           amount: payment.amount,
           status: payment.status,
@@ -232,9 +247,11 @@ export const getMyOrders = async (
           _id: product._id,
           name: product.name,
           images: product.images,
+          files: product.files,
         },
         isPurchased: payment.status === "PAID",
         purchasedPlan: payment.planType,
+        planType: payment.planType,
         quantity: payment.quantity,
         amount: payment.amount,
         status: payment.status,
