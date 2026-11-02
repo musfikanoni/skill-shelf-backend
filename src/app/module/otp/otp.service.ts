@@ -10,10 +10,10 @@ import { sendEmail } from "../../utils/sendEmail";
 // const OTP_EXPIRATION = 2 * 60 // 2minute
 
 export const generateOtp = (length = 4) => {
-    //6 digit otp
-    const otp = crypto.randomInt(10 ** (length - 1), 10 ** length).toString()
-    return otp
-}
+  //6 digit otp
+  const otp = crypto.randomInt(10 ** (length - 1), 10 ** length).toString();
+  return otp;
+};
 
 const verifySignupOtp = async (email: string, otp: number) => {
   // Step 1: find user
@@ -28,7 +28,10 @@ const verifySignupOtp = async (email: string, otp: number) => {
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp) {
-    throw new AppError(httpStatus.BAD_REQUEST, "OTP has expired or does not exist.");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "OTP has expired or does not exist.",
+    );
   }
 
   if (Number(storedOtp) !== otp) {
@@ -58,7 +61,9 @@ const resendOtp = async (email: string) => {
   // Step 3: save OTP in Redis with expiry (2 minutes)
   const redisKey = `otp:${email}`;
   await ensureRedisConnected();
-  await redisClient.set(redisKey, otp, { expiration: { type: "EX", value: 120 } });
+  await redisClient.set(redisKey, otp, {
+    expiration: { type: "EX", value: 120 },
+  });
 
   // Step 4: send OTP via email
   await sendEmail({
@@ -104,7 +109,7 @@ const resendForgotPasswordOtp = async (email: string) => {
   if (existingOtp) {
     throw new AppError(
       httpStatus.TOO_MANY_REQUESTS,
-      "OTP already sent. Please wait 2 minutes."
+      "OTP already sent. Please wait 2 minutes.",
     );
   }
 
@@ -166,11 +171,10 @@ const verifyResetOtp = async (email: string, otp: string) => {
   return null;
 };
 
-
 export const OTPService = {
-    generateOtp,
-    verifySignupOtp,
-    resendForgotPasswordOtp,
-    resendOtp,
-    verifyResetOtp
-}
+  generateOtp,
+  verifySignupOtp,
+  resendForgotPasswordOtp,
+  resendOtp,
+  verifyResetOtp,
+};

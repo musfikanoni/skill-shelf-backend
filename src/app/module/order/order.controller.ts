@@ -19,9 +19,9 @@ console.log("QUANTITY:", req.body.quantity);
         planType,
         couponCode,
     );
-console.log("REQ BODY:", req.body);
-console.log("QUANTITY:", req.body.quantity);
-console.log("COUPON CODE:", req.body.couponCode);
+// console.log("REQ BODY:", req.body);
+// console.log("QUANTITY:", req.body.quantity);
+// console.log("COUPON CODE:", req.body.couponCode);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,

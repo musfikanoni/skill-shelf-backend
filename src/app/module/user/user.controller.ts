@@ -9,24 +9,23 @@ import { sendResponse } from "../../utils/sendResponse";
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-
-
     const user = await UserServices.createUser(req.body);
 
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.CREATED,
-      message: "User Created Successfully. OTP sent to email. Please verify your account.",
+      message:
+        "User Created Successfully. OTP sent to email. Please verify your account.",
       data: user,
     });
-  }
+  },
 );
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
     const result = await UserServices.getAllUsers(
-      query as Record<string, string>
+      query as Record<string, string>,
     );
 
     sendResponse(res, {
@@ -36,7 +35,7 @@ const getAllUsers = catchAsync(
       data: result.data,
       meta: result.meta,
     });
-  }
+  },
 );
 
 const getMe = catchAsync(
@@ -50,7 +49,7 @@ const getMe = catchAsync(
       message: "Your profile Retrieved Successfully",
       data: result.data,
     });
-  }
+  },
 );
 
 const getSingleUser = catchAsync(
@@ -63,7 +62,7 @@ const getSingleUser = catchAsync(
       message: "User Retrieved Successfully",
       data: result.data,
     });
-  }
+  },
 );
 
 const updateUser = catchAsync(
@@ -75,7 +74,7 @@ const updateUser = catchAsync(
     const user = await UserServices.updateUser(
       userId,
       payload,
-      verifiedToken as JwtPayload
+      verifiedToken as JwtPayload,
     );
 
     sendResponse(res, {
@@ -84,14 +83,14 @@ const updateUser = catchAsync(
       message: "User Updated Successfully",
       data: user,
     });
-  }
+  },
 );
 
 const updateMyProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const decodedToken = req.user as JwtPayload;
     const userId = decodedToken.userId;
-const uploadedFile = (req.files as Express.MulterS3.File[])?.[0];
+    const uploadedFile = (req.files as Express.MulterS3.File[])?.[0];
 
     const updatedUser = await UserServices.updateMyProfile({
       userId,
@@ -106,50 +105,48 @@ const uploadedFile = (req.files as Express.MulterS3.File[])?.[0];
       message: "Profile updated successfully.",
       data: updatedUser,
     });
-  }
+  },
 );
 
-const deleteUserById = catchAsync(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
+const deleteUserById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    const result = await UserServices.deleteUserById(id as string);
-
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "User deleted successfully",
-      data: result,
-    });
-  }
-);
-
-const deleteAllUsers = catchAsync(
-  async (req: Request, res: Response) => {
-    const result = await UserServices.deleteAllUsers();
-
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "All users deleted successfully",
-      data: result,
-    });
-  }
-);
-
-const deleteOwnAccount = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const decodedToken = req.user as JwtPayload;
-  const userId = decodedToken.userId
-
-  const result = await UserServices.deleteOwnAccount(userId);
+  const result = await UserServices.deleteUserById(id as string);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: result.message,
-    data: null,
+    message: "User deleted successfully",
+    data: result,
   });
 });
+
+const deleteAllUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.deleteAllUsers();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "All users deleted successfully",
+    data: result,
+  });
+});
+
+const deleteOwnAccount = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload;
+    const userId = decodedToken.userId;
+
+    const result = await UserServices.deleteOwnAccount(userId);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: result.message,
+      data: null,
+    });
+  },
+);
 
 const getMyLibrary = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as JwtPayload;
@@ -174,5 +171,5 @@ export const UserControllers = {
   deleteUserById,
   deleteAllUsers,
   deleteOwnAccount,
-  getMyLibrary
+  getMyLibrary,
 };

@@ -99,7 +99,7 @@ const createUser = async (payload: Partial<IUser>) => {
   }
 
   return { user };
-};
+}; 
 
 const getAllUsers = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(User.find(), query);

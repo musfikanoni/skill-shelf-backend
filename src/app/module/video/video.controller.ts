@@ -4,9 +4,10 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
+import { getFileUrl } from "../../config/cloudinary.config";
 
 const createVideo = catchAsync(async (req: Request, res: Response) => {
-  const files = req.files as Express.MulterS3.File[];
+  const files = req.files as Express.Multer.File[];
 
   if (!files || files.length === 0) {
     throw new Error("Video file required");
@@ -16,7 +17,12 @@ const createVideo = catchAsync(async (req: Request, res: Response) => {
 
   const result = await VideoService.createVideo({
     ...req.body,
-    videoKey: videoFile.key,
+    videoKey:
+      getFileUrl(videoFile) ||
+      (videoFile as any).path ||
+      (videoFile as any).secure_url ||
+      (videoFile as any).key ||
+      (videoFile as any).filename,
   });
 
   sendResponse(res, {
