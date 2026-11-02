@@ -12,4 +12,6 @@ export interface IEnrollment {
   status: "PENDING" | "PAID" | "FAILED";
 
   enrolledAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

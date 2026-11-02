@@ -64,9 +64,9 @@ export interface IUser {
   referredBy?: Types.ObjectId | null;
   totalCommission?: number;
   referredByCode?: string;
-  // stripeSubscriptionId?: string | null; 
-  // subscriptionStatus?: SubscriptionStatus;
-  // trialEndsAt?: Date | null; 
-  // currentPlan?: Types.ObjectId;
-  // currentPeriodEnd?: Date;
+  stripeSubscriptionId?: string | null; 
+  subscriptionStatus?: SubscriptionStatus;
+  trialEndsAt?: Date | null; 
+  currentPlan?: Types.ObjectId | null;
+  currentPeriodEnd?: Date | null;
 }

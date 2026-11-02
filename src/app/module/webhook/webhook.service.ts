@@ -95,7 +95,7 @@ export const handleStripeWebhook = async (event: any) => {
     if (event.type === "invoice.paid") {
       if (session.subscription) {
         try {
-          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          const sub: any = await stripe.subscriptions.retrieve(session.subscription);
           const periodEnd = sub.current_period_end
             ? new Date(sub.current_period_end * 1000)
             : sub.items?.data?.[0]?.current_period_end
@@ -174,7 +174,7 @@ export const handleStripeWebhook = async (event: any) => {
           );
           if (subscriptionId) {
             try {
-              const sub = await stripe.subscriptions.retrieve(subscriptionId);
+              const sub: any = await stripe.subscriptions.retrieve(subscriptionId);
               if (sub.current_period_end) {
                 currentPeriodEnd = new Date(sub.current_period_end * 1000);
               } else if (sub.items?.data?.[0]?.current_period_end) {
