@@ -56,6 +56,30 @@ const getBundleByIdPublic = catchAsync(
   }
 );
 
+const updateBundle = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await BundleService.updateBundle(id as string, req.body);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Bundle updated successfully",
+    data: result
+  });
+});
+
+const deleteBundle = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await BundleService.deleteBundle(id as string);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Bundle deleted successfully",
+    data: result
+  });
+});
+
 const createCheckout = catchAsync(async (req: any, res: Response) => {
   const userId = req.user.userId;
   const { bundleId, couponCode } = req.body;
@@ -79,5 +103,7 @@ export const BundleController = {
   getAllBundles,
   getSingleBundle,
   getBundleByIdPublic,
+  updateBundle,
+  deleteBundle,
   createCheckout
 };

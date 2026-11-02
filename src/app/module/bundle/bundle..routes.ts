@@ -13,16 +13,31 @@ router.post(
 );
 
 router.get("/", BundleController.getAllBundles);
+
 router.get(
   "/public/:id",
   BundleController.getBundleByIdPublic
 );
+
 router.get(
   "/:id",
   checkAuth(Role.USER),
   checkPlanAccess("BUNDLE"),
   BundleController.getSingleBundle
 );
+
+router.patch(
+  "/:id",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  BundleController.updateBundle
+);
+
+router.delete(
+  "/:id",
+  checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+  BundleController.deleteBundle
+);
+
 router.post(
   "/checkout",
   checkAuth(Role.USER),
