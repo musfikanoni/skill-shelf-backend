@@ -151,13 +151,18 @@ const getSingleOrder = async (id: string) => {
 
     let product: any = null;
     if (payment.itemType === "BUNDLE") {
-        const bundle = await Bundle.findById(payment.itemId);
+        const bundle = await Bundle.findById(payment.itemId)
+            .populate("products")
+            .populate("courses");
         product = bundle ? {
             _id: bundle._id,
             name: `${bundle.name} (Bundle)`,
+            description: bundle.description,
             images: [],
             price: { basic: bundle.price, pro: bundle.price, vip: bundle.price },
-            category: { name: "Bundle" }
+            products: bundle.products || [],
+            courses: bundle.courses || [],
+            category: { name: "Bundle Package" }
         } : null;
     } else {
         product = await Product.findById(payment.itemId).populate("category");
@@ -172,6 +177,7 @@ const getSingleOrder = async (id: string) => {
         quantity: payment.quantity || 1,
         amount: payment.amount,
         status: payment.status,
+        stripeSessionId: payment.stripeSessionId,
         createdAt: payment.createdAt,
     };
 };
