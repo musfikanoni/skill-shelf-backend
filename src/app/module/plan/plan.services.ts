@@ -24,7 +24,12 @@ const createPlan = async (payload: any) => {
   const existingPlan = await Plan.findOne({ name: payload.name });
 
   if (existingPlan) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Plan already exists");
+    if (!existingPlan.isActive) {
+    
+      await Plan.findByIdAndDelete(existingPlan._id);
+    } else {
+      throw new AppError(httpStatus.BAD_REQUEST, "Plan already exists");
+    }
   }
 
   if (payload.price === 0) {
@@ -134,7 +139,7 @@ const deletePlan = async (id: string) => {
     throw new AppError(httpStatus.NOT_FOUND, "Plan not found");
   }
 
-  return Plan.findByIdAndUpdate(id, { isActive: false }, { new: true });
+  return Plan.findByIdAndDelete(id);
 };
 
 export const PlanServices = {
