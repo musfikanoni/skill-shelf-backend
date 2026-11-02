@@ -23,7 +23,6 @@ const authProviderSchema = new Schema<IAuthProvider>(
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    // businessName: { type: String, default: null },
     email: { type: String, required: true, unique: true },
     password: { type: String },
     role: {
@@ -48,28 +47,28 @@ const userSchema = new Schema<IUser>(
       default: null,
     },
 
-    // stripeSubscriptionId: {
-    //     type: String,
-    //     default: null,
-    // },
+    stripeSubscriptionId: {
+      type: String,
+      default: null,
+    },
 
-    // subscriptionStatus: {
-    //     type: String,
-    //     enum: Object.values(SubscriptionStatus),
-    //     default: SubscriptionStatus.TRIAL,
-    // },
+    subscriptionStatus: {
+      type: String,
+      enum: Object.values(SubscriptionStatus),
+      default: SubscriptionStatus.TRIAL,
+    },
 
-    // trialEndsAt: {
-    //     type: Date,
-    //     default: null,
-    // },
+    trialEndsAt: {
+      type: Date,
+      default: null,
+    },
 
-    // currentPlan: {
-    //     type: Schema.Types.ObjectId,
-    //     ref: "Plan",
-    //     default: null,
-    // },
-    // currentPeriodEnd: { type: Date },
+    currentPlan: {
+      type: Schema.Types.ObjectId,
+      ref: "Plan",
+      default: null,
+    },
+    currentPeriodEnd: { type: Date },
     affiliateCode: {
       type: String,
       unique: true,

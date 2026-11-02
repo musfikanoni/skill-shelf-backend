@@ -1,4 +1,3 @@
-
 import { stripe } from "../../config/stripe";
 import { Plan } from "../plan/plan.models";
 import { User } from "../user/user.model";
@@ -48,7 +47,7 @@ const createCheckoutSession = async (
         quantity: 1,
       },
     ],
-    success_url: `${process.env.FRONTEND_URL}/success`,
+    success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/cancel`,
     subscription_data: {
       metadata: {

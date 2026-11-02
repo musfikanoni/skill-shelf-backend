@@ -1,11 +1,18 @@
 import { Request, Response } from "express";
 import { stripe } from "../../config/stripe";
 import { handleStripeWebhook } from "./webhook.service";
+import { connectDB } from "../../config/db";
 
 export const stripeWebhook = async (
   req: Request,
   res: Response
 ) => {
+  try {
+    await connectDB();
+  } catch (err: any) {
+    console.error("MongoDB connection failed in webhook:", err);
+  }
+
   const sig = req.headers["stripe-signature"] as string;
 
   let event: any;

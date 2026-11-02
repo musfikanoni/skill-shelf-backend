@@ -36,7 +36,6 @@ const createCourseCheckoutSession = async (
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
 
-
     line_items: [
       {
         price_data: {
@@ -50,7 +49,7 @@ const createCourseCheckoutSession = async (
       },
     ],
 
-    success_url: `${process.env.FRONTEND_URL}/success`,
+    success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/cancel`,
 
     metadata: {
@@ -60,127 +59,109 @@ const createCourseCheckoutSession = async (
     },
   });
 
-  // 4️⃣ Create PENDING enrollment
-  // await Enrollment.create({
-  //   user: userId,
-  //   course: courseId,
-  //   stripeSessionId: session.id,
-  //   amount: course.price,
-  //   status: "PENDING",
-  // });
-
   await Payment.create({
-  user: userId,
-  itemType: "COURSE",
-  itemId: courseId,
-  stripeSessionId: session.id,
-  amount: course.price,
-  status: "PENDING",
-  expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-});
+    user: userId,
+    itemType: "COURSE",
+    itemId: courseId,
+    stripeSessionId: session.id,
+    amount: course.price,
+    status: "PENDING",
+    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+  });
 
   return session.url;
 };
 
 const getAllEnrollments = async () => {
-    const result = await Payment.find({ itemType: "COURSE" })
-        .populate("user", "name email")
-        .sort({ createdAt: -1 });
+  const result = await Payment.find({ itemType: "COURSE" })
+    .populate("user", "name email")
+    .sort({ createdAt: -1 });
 
-    return result;
+  return result;
 };
 
 const getSingleEnrollment = async (id: string) => {
-    const result = await Payment.findById(id)
-        .populate("user", "name email")
+  const result = await Payment.findById(id).populate("user", "name email");
 
-    if (!result) {
-        throw new AppError(httpStatus.NOT_FOUND, "Enrollment not found");
-    }
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, "Enrollment not found");
+  }
 
-    return result;
+  return result;
 };
 
-// const getMyEnrollments = async (userId: string) => {
-//   const payments = await Payment.find({
-//     user: userId,
-//     itemType: "COURSE",
-//     status: "PAID",
-//   }).sort({ createdAt: -1 });
-
-//   const result = await Promise.all(
-//     payments.map(async (payment) => {
-//       const course = await Course.findById(payment.itemId);
-
-//       if (!course) return null;
-
-//       return {
-//         _id: payment._id,
-//         course,
-//         isEnrolled: true,
-//         amount: payment.amount,
-//         createdAt: payment.createdAt,
-//       };
-//     })
-//   );
-
-//   return result.filter(Boolean);
-// };
-
-
 const getMyEnrollments = async (userId: string) => {
-  const payments = await Payment.find({
+  // 1. Fetch from Enrollment collection (direct & bundle enrollments)
+  const enrollments = await Enrollment.find({
+    user: userId,
+    status: "PAID",
+  }).sort({ createdAt: -1 });
+
+  // 2. Fetch from Payment collection (direct course payments)
+  const coursePayments = await Payment.find({
     user: userId,
     itemType: "COURSE",
     status: "PAID",
   }).sort({ createdAt: -1 });
 
+  // 3. Deduplicate by course ID
+  const courseMap = new Map();
+
+  for (const enroll of enrollments) {
+    if (enroll.course) {
+      courseMap.set(enroll.course.toString(), {
+        _id: enroll._id,
+        courseId: enroll.course,
+        amount: enroll.amount,
+        createdAt: enroll.createdAt,
+      });
+    }
+  }
+
+  for (const pay of coursePayments) {
+    if (pay.itemId && !courseMap.has(pay.itemId.toString())) {
+      courseMap.set(pay.itemId.toString(), {
+        _id: pay._id,
+        courseId: pay.itemId,
+        amount: pay.amount,
+        createdAt: pay.createdAt,
+      });
+    }
+  }
+
+  const items = Array.from(courseMap.values());
+
   const result = await Promise.all(
-    payments.map(async (payment) => {
-
-      // 1️⃣ Course fetch
-      const course = await Course.findById(payment.itemId);
-
+    items.map(async (item: any) => {
+      const course = await Course.findById(item.courseId);
       if (!course) return null;
 
-      // 2️⃣ All videos of course
       const videos = await Video.find({
         course: course._id,
         isPublished: true,
       }).lean();
 
       const totalVideos = videos.length;
-
-      // 3️⃣ total duration
       const totalDuration = videos.reduce(
         (sum, v) => sum + (v.duration || 0),
         0
       );
 
-      // 4️⃣ user progress
       const progress = await VideoProgress.find({
         user: userId,
         course: course._id,
       }).lean();
 
-      const completedVideos = progress.filter(
-        (p) => p.isCompleted
-      ).length;
-
+      const completedVideos = progress.filter((p) => p.isCompleted).length;
       const watchedDuration = progress.reduce(
         (sum, p) => sum + (p.watchedDuration || 0),
         0
       );
-
-      // 5️⃣ percentage
       const progressPercent =
-        totalVideos === 0
-          ? 0
-          : Math.round((completedVideos / totalVideos) * 100);
+        totalVideos === 0 ? 0 : Math.round((completedVideos / totalVideos) * 100);
 
       return {
-        _id: payment._id,
-
+        _id: item._id,
         course: {
           _id: course._id,
           title: course.title,
@@ -188,16 +169,14 @@ const getMyEnrollments = async (userId: string) => {
           thumbnail: course.thumbnail,
           price: course.price,
         },
-
         totalVideos,
         totalDuration,
         completedVideos,
         watchedDuration,
         progress: progressPercent,
-
         isEnrolled: true,
-        amount: payment.amount,
-        createdAt: payment.createdAt,
+        amount: item.amount,
+        createdAt: item.createdAt,
       };
     })
   );
@@ -205,10 +184,9 @@ const getMyEnrollments = async (userId: string) => {
   return result.filter(Boolean);
 };
 
-
 export const EnrollmentService = {
   createCourseCheckoutSession,
   getAllEnrollments,
   getSingleEnrollment,
-  getMyEnrollments
+  getMyEnrollments,
 };

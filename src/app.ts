@@ -1,4 +1,3 @@
-
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Request, Response } from "express";
@@ -16,10 +15,14 @@ import { WebhookController } from "./app/module/webhook/webhook.controller";
 
 const app = express();
 
-// Stripe webhook
-// Keep this before express.json() because Stripe needs the raw request body.
+// Stripe webhook (Keep this before express.json() because Stripe needs the raw request body)
 app.post(
     "/webhook",
+    express.raw({ type: "application/json" }),
+    WebhookController.stripeWebhook
+);
+app.post(
+    "/api/v1/webhook",
     express.raw({ type: "application/json" }),
     WebhookController.stripeWebhook
 );

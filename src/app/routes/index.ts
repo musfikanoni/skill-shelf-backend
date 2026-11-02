@@ -19,6 +19,7 @@ import { AffiliateRoutes } from "../module/affiliate/affiliate.routes"
 import { OrderRoutes } from "../module/order/order.routes"
 import { CourseRoutes } from "../module/courses/courses.routes"
 import { DashboardRoutes } from "../module/dashboard/dashboard.routes"
+import { PaymentRoutes } from "../module/payment/payment.routes"
 
 export const router = Router()
 
@@ -99,9 +100,12 @@ const moduleRoutes = [
         path: "/affiliate",
         route: AffiliateRoutes
     },
+    {
+        path: "/payment",
+        route: PaymentRoutes
+    },
 ]
 
 moduleRoutes.forEach((route) => {
     router.use(route.path, route.route)
 })
-

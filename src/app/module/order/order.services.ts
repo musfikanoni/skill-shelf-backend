@@ -7,6 +7,7 @@ import { PlanType } from "./order.interface";
 import { Payment } from "../payment/payment.model";
 import { QueryBuilder } from "../../utils/QueryBuiler";
 import { Coupon } from "../coupon/coupon.model";
+import { Bundle } from "../bundle/bundle.model";
 
 const createProductCheckout = async (
     userId: string,
@@ -15,7 +16,6 @@ const createProductCheckout = async (
     planType: PlanType,
     couponCode?: string,
 ) => {
-
     const user = await User.findById(userId);
     if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
@@ -26,7 +26,6 @@ const createProductCheckout = async (
     if (!quantity || isNaN(quantity) || quantity <= 0) {
         throw new AppError(httpStatus.BAD_REQUEST, "Invalid quantity");
     }
-  
 
     let unitPrice = 0;
 
@@ -92,7 +91,7 @@ const createProductCheckout = async (
     }
 
     const session = await stripe.checkout.sessions.create({
-        mode: "payment", // 🔥 IMPORTANT
+        mode: "payment",
         customer: stripeCustomerId,
 
         line_items: [
@@ -103,13 +102,12 @@ const createProductCheckout = async (
                         name: product.name
                     },
                     unit_amount: Math.round(finalAmount * 100)
-
                 },
                 quantity: 1,
             }
         ],
 
-        success_url: `${process.env.FRONTEND_URL}/success`,
+        success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.FRONTEND_URL}/cancel`,
 
         metadata: {
@@ -122,20 +120,6 @@ const createProductCheckout = async (
             total: String(finalAmount)
         }
     });
-    console.log("ORDER QUANTITY:", orderQuantity);
-    console.log("TYPE:", typeof orderQuantity);
-
-    // create pending order
-    // await Order.create({
-    //     user: userId,
-    //     product: productId,
-    //     stripeSessionId: session.id,
-    //     planType,
-    //     discountAmount,
-    //     finalAmount,
-    //     productQuantity: quantity,
-    //     couponCode: appliedCoupon,
-    // });
 
     await Payment.create({
         user: userId,
@@ -144,66 +128,40 @@ const createProductCheckout = async (
         stripeSessionId: session.id,
         planType,
         amount: finalAmount,
-        status: "PENDING",
         quantity,
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
     });
+
     return session.url;
 };
 
 const getAllOrders = async () => {
-    const result = await Payment.find({ itemType: "PRODUCT" })
+    return Payment.find({ itemType: "PRODUCT" })
         .populate("user", "name email")
         .sort({ createdAt: -1 });
-
-    return result;
 };
 
 const getSingleOrder = async (id: string) => {
-    const result = await Payment.findById(id)
-        .populate("user", "name email")
+    const payment = await Payment.findById(id).populate("user", "name email");
 
-    if (!result) {
+    if (!payment) {
         throw new AppError(httpStatus.NOT_FOUND, "Order not found");
     }
 
-    return result;
+    const product = await Product.findById(payment.itemId).populate("category");
+
+    return {
+        _id: payment._id,
+        product,
+        user: payment.user,
+        planType: payment.planType,
+        quantity: payment.quantity,
+        amount: payment.amount,
+        status: payment.status,
+        createdAt: payment.createdAt,
+    };
 };
-
-// const getMyOrders = async (userId: string) => {
-//   const payments = await Payment.find({
-//     user: userId,
-//     itemType: "PRODUCT",
-//   }).sort({ createdAt: -1 });
-
-//   const result = await Promise.all(
-//     payments.map(async (payment: any) => {
-//       const product = await Product.findById(payment.itemId)
-//         .populate("category");
-
-//       if (!product) return null;
-
-//       return {
-//         _id: payment._id,
-
-//         product: {
-//           _id: product._id,
-//           name: product.name,
-//           images: product.images,
-//         },
-
-//         isPurchased: payment.status === "PAID",
-//         purchasedPlan: payment.planType,
-//         quantity: payment.quantity,
-//         amount: payment.amount,
-//         createdAt: payment.createdAt,
-//         status: payment.status
-//       };
-//     })
-//   );
-
-//   return result.filter(Boolean);
-// };
 
 export const getMyOrders = async (
   userId: string,
@@ -211,11 +169,11 @@ export const getMyOrders = async (
 ) => {
   const searchTerm = query.searchTerm || "";
 
-  // 🔥 QueryBuilder on Payment
+  // 🔥 QueryBuilder on Payment for PRODUCT and BUNDLE
   const paymentQuery = new QueryBuilder(
     Payment.find({
       user: userId,
-      itemType: "PRODUCT",
+      itemType: { $in: ["PRODUCT", "BUNDLE"] },
     }),
     query
   )
@@ -226,9 +184,36 @@ export const getMyOrders = async (
   const payments = await paymentQuery.build();
   const meta = await paymentQuery.getMeta();
 
-  // 🔥 Attach Product data
+  // 🔥 Attach Product or Bundle data
   const data = await Promise.all(
     payments.map(async (payment: any) => {
+      if (payment.itemType === "BUNDLE") {
+        const bundle = await Bundle.findById(payment.itemId);
+        if (!bundle) return null;
+
+        if (
+          searchTerm &&
+          !bundle.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ) {
+          return null;
+        }
+
+        return {
+          _id: payment._id,
+          product: {
+            _id: bundle._id,
+            name: `${bundle.name} (Bundle)`,
+            images: [],
+          },
+          isPurchased: payment.status === "PAID",
+          purchasedPlan: "Bundle",
+          quantity: 1,
+          amount: payment.amount,
+          status: payment.status,
+          createdAt: payment.createdAt,
+        };
+      }
+
       const product = await Product.findById(payment.itemId).populate("category");
 
       if (!product) return null;
@@ -243,13 +228,11 @@ export const getMyOrders = async (
 
       return {
         _id: payment._id,
-
         product: {
           _id: product._id,
           name: product.name,
           images: product.images,
         },
-
         isPurchased: payment.status === "PAID",
         purchasedPlan: payment.planType,
         quantity: payment.quantity,
