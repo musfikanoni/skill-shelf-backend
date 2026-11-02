@@ -34,11 +34,11 @@ const createPlan = async (payload: any) => {
       features: payload.features || [],
       stripeProductId: null,
       stripePriceId: null,
-       access: {
-      products: payload.access?.products || [],
-      courses: payload.access?.courses || [],
-      bundles: payload.access?.bundles || [],
-    },
+      access: {
+        products: payload.access?.products || [],
+        courses: payload.access?.courses || [],
+        bundles: payload.access?.bundles || [],
+      },
     });
   }
 
@@ -93,16 +93,29 @@ const updatePlan = async (id: string, payload: any) => {
 
   let updatedData: any = { ...payload };
 
-  if (payload.price !== undefined || payload.interval !== undefined) {
+  const newPriceValue = payload.price !== undefined ? payload.price : plan.price;
+  const newIntervalValue = payload.interval !== undefined ? payload.interval : plan.interval;
+
+  if (newPriceValue > 0 && (payload.price !== undefined || payload.interval !== undefined)) {
+    let stripeProductId = plan.stripeProductId;
+
+    // 🛡️ If plan.stripeProductId is missing or empty string, create product in Stripe
+    if (!stripeProductId || typeof stripeProductId !== "string" || stripeProductId.trim() === "") {
+      const stripeProduct = await stripe.products.create({
+        name: payload.name || plan.name,
+        description: (payload.features || plan.features || []).join(", ") || undefined,
+      });
+      stripeProductId = stripeProduct.id;
+      updatedData.stripeProductId = stripeProductId;
+    }
+
     const newPrice = await stripe.prices.create({
-      unit_amount: Math.round((payload.price ?? plan.price) * 100),
-      currency: (payload.currency ?? plan.currency).toLowerCase(),
+      unit_amount: Math.round(newPriceValue * 100),
+      currency: (payload.currency ?? plan.currency ?? "usd").toLowerCase(),
       recurring: {
-        interval: mapIntervalToStripe(
-          payload.interval ?? plan.interval
-        ),
+        interval: mapIntervalToStripe(newIntervalValue),
       },
-      product: plan.stripeProductId,
+      product: stripeProductId,
     });
 
     updatedData.stripePriceId = newPrice.id;
