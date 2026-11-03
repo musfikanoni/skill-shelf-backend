@@ -4,6 +4,7 @@ import { User } from "../user/user.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
 import { Subscription } from "./subscription.model";
+import { SubscriptionStatus } from "../user/user.interface";
 
 const createCheckoutSession = async (
   userId: string,
@@ -19,6 +20,36 @@ const createCheckoutSession = async (
   const plan = await Plan.findById(planId);
   if (!plan || !plan.stripePriceId) {
     throw new AppError(httpStatus.BAD_REQUEST, "Invalid plan");
+  }
+
+  // 2.1️⃣ Check if user already has an active subscription for this plan that hasn't expired
+  const activeSubscription = await Subscription.findOne({
+    user: userId,
+    status: SubscriptionStatus.ACTIVE,
+  }).populate("plan");
+
+  if (activeSubscription) {
+    const isSamePlan =
+      activeSubscription.plan?._id?.toString() === planId.toString() ||
+      activeSubscription.plan?.toString() === planId.toString();
+
+    const isNotExpired =
+      !activeSubscription.currentPeriodEnd ||
+      new Date(activeSubscription.currentPeriodEnd) > new Date();
+
+    if (isSamePlan && isNotExpired) {
+      const expiryDate = activeSubscription.currentPeriodEnd
+        ? new Date(activeSubscription.currentPeriodEnd).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : "renewal date";
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `You already have an active subscription for this plan until ${expiryDate}. You cannot purchase the same plan again before it expires.`
+      );
+    }
   }
 
   // 3️⃣ create stripe customer if not exists

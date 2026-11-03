@@ -1,190 +1,256 @@
+import { Types } from "mongoose";
 import { stripe } from "../../config/stripe";
 import { Product } from "../product/product.model";
 import { User } from "../user/user.model";
 import AppError from "../../errorHelpers/AppError";
 import httpStatus from "http-status-codes";
-import { PlanType } from "./order.interface";
+import { OrderStatus, PlanType } from "./order.interface";
+import { Order } from "./order.model";
 import { Payment } from "../payment/payment.model";
 import { QueryBuilder } from "../../utils/QueryBuiler";
 import { Coupon } from "../coupon/coupon.model";
 import { Bundle } from "../bundle/bundle.model";
+import { Subscription } from "../subscription/subscription.model";
+import { SubscriptionStatus } from "../user/user.interface";
 
 const createProductCheckout = async (
-    userId: string,
-    productId: string,
-    orderQuantity: number,
-    planType: PlanType,
-    couponCode?: string,
+  userId: string,
+  productId: string,
+  orderQuantity: number,
+  planType: PlanType,
+  couponCode?: string,
 ) => {
-    const user = await User.findById(userId);
-    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  const user = await User.findById(userId);
+  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
-    const product = await Product.findById(productId);
-    if (!product) throw new AppError(httpStatus.NOT_FOUND, "Product not found");
-    const quantity = Number(orderQuantity);
+  const product = await Product.findById(productId);
+  if (!product) throw new AppError(httpStatus.NOT_FOUND, "Product not found");
+  const quantity = Number(orderQuantity);
 
-    if (!quantity || isNaN(quantity) || quantity <= 0) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Invalid quantity");
-    }
+  if (!quantity || isNaN(quantity) || quantity <= 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Invalid quantity");
+  }
 
-    let unitPrice = 0;
+  // ===================================
+  // 🔥 CHECK IF PRODUCT ALREADY PURCHASED
+  // ===================================
+  const userObjId = Types.ObjectId.isValid(userId)
+    ? new Types.ObjectId(userId)
+    : userId;
+  const productObjId = Types.ObjectId.isValid(productId)
+    ? new Types.ObjectId(productId)
+    : productId;
 
-    if (planType === PlanType.basic) unitPrice = product.price.basic;
-    else if (planType === PlanType.pro) unitPrice = product.price.pro;
-    else if (planType === PlanType.vip) unitPrice = product.price.vip;
-    else throw new AppError(httpStatus.BAD_REQUEST, "Invalid plan type");
+  const alreadyPurchased =
+    (await Payment.findOne({
+      user: userObjId,
+      itemType: "PRODUCT",
+      itemId: productObjId,
+      status: "PAID",
+    })) ||
+    (await Order.findOne({
+      user: userObjId,
+      product: productObjId,
+      status: OrderStatus.PAID,
+    }));
 
-    const baseAmount = unitPrice * quantity;
+  if (alreadyPurchased) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You have already purchased this product. You can't purchase it again.",
+    );
+  }
 
-    let discountAmount = 0;
-    let finalAmount = baseAmount;
-    let appliedCoupon = null;
+  // ===================================
+  // 🔥 MEMBERSHIP PLAN RESTRICTION
+  // ===================================
+  const activeSub = await Subscription.findOne({
+    user: userId,
+    status: SubscriptionStatus.ACTIVE,
+  }).populate("plan");
 
-    if (couponCode) {
-        const coupon = await Coupon.findOne({
-            code: couponCode.toUpperCase(),
-            isActive: true
-        });
+  const activePlanName = activeSub?.plan
+    ? ((activeSub.plan as any)?.name || "").toLowerCase()
+    : "";
 
-        if (!coupon) {
-            throw new AppError(httpStatus.BAD_REQUEST, "Invalid coupon");
-        }
+  const isVipUser = activePlanName.includes("vip");
+  const isProUser = activePlanName.includes("pro") || isVipUser;
 
-        if (new Date() > coupon.expiresAt) {
-            throw new AppError(httpStatus.BAD_REQUEST, "Coupon expired");
-        }
+  // Basic package is open to everyone
+  if (planType === PlanType.pro && !isProUser) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "The Pro package requires an active Pro or VIP Membership. Please subscribe or upgrade your membership first.",
+    );
+  }
 
-        if (coupon.minOrderAmount && baseAmount < coupon.minOrderAmount) {
-            throw new AppError(
-                httpStatus.BAD_REQUEST,
-                `Minimum order ${coupon.minOrderAmount} required`
-            );
-        }
+  if (planType === PlanType.vip && !isVipUser) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "The VIP package requires an active VIP Membership. Please upgrade your membership to VIP first.",
+    );
+  }
 
-        // discount calculate
-        if (coupon.discountType === "PERCENTAGE") {
-            discountAmount = (baseAmount * coupon.discountValue) / 100;
+  let unitPrice = 0;
 
-            if (coupon.maxDiscountAmount) {
-                discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
-            }
-        } else {
-            discountAmount = coupon.discountValue;
-        }
+  if (planType === PlanType.basic) unitPrice = product.price.basic;
+  else if (planType === PlanType.pro) unitPrice = product.price.pro;
+  else if (planType === PlanType.vip) unitPrice = product.price.vip;
+  else throw new AppError(httpStatus.BAD_REQUEST, "Invalid plan type");
 
-        finalAmount = baseAmount - discountAmount;
-        appliedCoupon = coupon.code;
-    }
+  const baseAmount = unitPrice * quantity;
 
-    let stripeCustomerId = user.stripeCustomerId;
+  let discountAmount = 0;
+  let finalAmount = baseAmount;
+  let appliedCoupon = null;
 
-    if (!stripeCustomerId) {
-        const customer = await stripe.customers.create({
-            email: user.email,
-            name: user.name,
-            metadata: { userId: user._id.toString() }
-        });
-
-        stripeCustomerId = customer.id;
-        user.stripeCustomerId = stripeCustomerId;
-        await user.save();
-    }
-
-    const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        customer: stripeCustomerId,
-
-        line_items: [
-            {
-                price_data: {
-                    currency: "usd",
-                    product_data: {
-                        name: product.name
-                    },
-                    unit_amount: Math.round(finalAmount * 100)
-                },
-                quantity: 1,
-            }
-        ],
-
-        success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL}/cancel`,
-
-        metadata: {
-            userId: userId,
-            productId: productId,
-            quantity: String(quantity),
-            planType,
-            coupon: appliedCoupon || "",
-            discount: String(discountAmount),
-            total: String(finalAmount)
-        }
+  if (couponCode) {
+    const coupon = await Coupon.findOne({
+      code: couponCode.toUpperCase(),
+      isActive: true,
     });
 
-    await Payment.create({
-        user: userId,
-        itemType: "PRODUCT",
-        itemId: productId,
-        stripeSessionId: session.id,
-        planType,
-        amount: finalAmount,
-        quantity,
-        status: "PENDING",
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    if (!coupon) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Invalid coupon");
+    }
+
+    if (new Date() > coupon.expiresAt) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Coupon expired");
+    }
+
+    if (coupon.minOrderAmount && baseAmount < coupon.minOrderAmount) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Minimum order ${coupon.minOrderAmount} required`,
+      );
+    }
+
+    // discount calculate
+    if (coupon.discountType === "PERCENTAGE") {
+      discountAmount = (baseAmount * coupon.discountValue) / 100;
+
+      if (coupon.maxDiscountAmount) {
+        discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+      }
+    } else {
+      discountAmount = coupon.discountValue;
+    }
+
+    finalAmount = baseAmount - discountAmount;
+    appliedCoupon = coupon.code;
+  }
+
+  let stripeCustomerId = user.stripeCustomerId;
+
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name: user.name,
+      metadata: { userId: user._id.toString() },
     });
 
-    return session.url;
+    stripeCustomerId = customer.id;
+    user.stripeCustomerId = stripeCustomerId;
+    await user.save();
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: stripeCustomerId,
+
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: product.name,
+          },
+          unit_amount: Math.round(finalAmount * 100),
+        },
+        quantity: 1,
+      },
+    ],
+
+    success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+
+    metadata: {
+      userId: userId,
+      productId: productId,
+      quantity: String(quantity),
+      planType,
+      coupon: appliedCoupon || "",
+      discount: String(discountAmount),
+      total: String(finalAmount),
+    },
+  });
+
+  await Payment.create({
+    user: userId,
+    itemType: "PRODUCT",
+    itemId: productId,
+    stripeSessionId: session.id,
+    planType,
+    amount: finalAmount,
+    quantity,
+    status: "PENDING",
+    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+  });
+
+  return session.url;
 };
 
 const getAllOrders = async () => {
-    return Payment.find({ itemType: "PRODUCT" })
-        .populate("user", "name email")
-        .sort({ createdAt: -1 });
+  return Payment.find({ itemType: "PRODUCT" })
+    .populate("user", "name email")
+    .sort({ createdAt: -1 });
 };
 
 const getSingleOrder = async (id: string) => {
-    const payment = await Payment.findById(id).populate("user", "name email");
+  const payment = await Payment.findById(id).populate("user", "name email");
 
-    if (!payment) {
-        throw new AppError(httpStatus.NOT_FOUND, "Order not found");
-    }
+  if (!payment) {
+    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+  }
 
-    let product: any = null;
-    if (payment.itemType === "BUNDLE") {
-        const bundle = await Bundle.findById(payment.itemId)
-            .populate("products")
-            .populate("courses");
-        product = bundle ? {
-            _id: bundle._id,
-            name: `${bundle.name} (Bundle)`,
-            description: bundle.description,
-            images: [],
-            price: { basic: bundle.price, pro: bundle.price, vip: bundle.price },
-            products: bundle.products || [],
-            courses: bundle.courses || [],
-            category: { name: "Bundle Package" }
-        } : null;
-    } else {
-        product = await Product.findById(payment.itemId).populate("category");
-    }
+  let product: any = null;
+  if (payment.itemType === "BUNDLE") {
+    const bundle = await Bundle.findById(payment.itemId)
+      .populate("products")
+      .populate("courses");
+    product = bundle
+      ? {
+          _id: bundle._id,
+          name: `${bundle.name} (Bundle)`,
+          description: bundle.description,
+          images: [],
+          price: { basic: bundle.price, pro: bundle.price, vip: bundle.price },
+          products: bundle.products || [],
+          courses: bundle.courses || [],
+          category: { name: "Bundle Package" },
+        }
+      : null;
+  } else {
+    product = await Product.findById(payment.itemId).populate("category");
+  }
 
-    return {
-        _id: payment._id,
-        product,
-        user: payment.user,
-        itemType: payment.itemType,
-        planType: payment.planType || "Standard",
-        quantity: payment.quantity || 1,
-        amount: payment.amount,
-        status: payment.status,
-        stripeSessionId: payment.stripeSessionId,
-        createdAt: payment.createdAt,
-    };
+  return {
+    _id: payment._id,
+    product,
+    user: payment.user,
+    itemType: payment.itemType,
+    planType: payment.planType || "Standard",
+    quantity: payment.quantity || 1,
+    amount: payment.amount,
+    status: payment.status,
+    stripeSessionId: payment.stripeSessionId,
+    createdAt: payment.createdAt,
+  };
 };
 
 export const getMyOrders = async (
   userId: string,
-  query: Record<string, string>
+  query: Record<string, string>,
 ) => {
   const searchTerm = query.searchTerm || "";
 
@@ -194,7 +260,7 @@ export const getMyOrders = async (
       user: userId,
       itemType: { $in: ["PRODUCT", "BUNDLE"] },
     }),
-    query
+    query,
   )
     .filter()
     .sort()
@@ -235,7 +301,9 @@ export const getMyOrders = async (
         };
       }
 
-      const product = await Product.findById(payment.itemId).populate("category");
+      const product = await Product.findById(payment.itemId).populate(
+        "category",
+      );
 
       if (!product) return null;
 
@@ -263,7 +331,7 @@ export const getMyOrders = async (
         status: payment.status,
         createdAt: payment.createdAt,
       };
-    })
+    }),
   );
 
   return {
@@ -273,8 +341,8 @@ export const getMyOrders = async (
 };
 
 export const OrderService = {
-    createProductCheckout,
-    getAllOrders,
-    getSingleOrder,
-    getMyOrders
+  createProductCheckout,
+  getAllOrders,
+  getSingleOrder,
+  getMyOrders,
 };
